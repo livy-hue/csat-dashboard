@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSAT 評論儀表板 — TaxiGo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f4f0; color: #1a1a18; font-size: 14px; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
+  h1 span { font-size: 12px; font-weight: 400; color: #888; }
+
+  .upload-zone { border: 1.5px dashed #ccc; border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: border-color .2s, background .2s; background: #fff; }
+  .upload-zone:hover, .upload-zone.drag { border-color: #378ADD; background: #f0f7ff; }
+  .upload-zone input { display: none; }
+  .upload-icon { font-size: 32px; margin-bottom: .5rem; color: #aaa; }
+  .upload-label { font-size: 13px; color: #666; }
+  .upload-label strong { color: #378ADD; cursor: pointer; }
+  .upload-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .file-loaded { font-size: 12px; color: #3B6D11; margin-top: 8px; font-weight: 500; }
+
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: .75rem; }
+  .filter-label { font-size: 12px; color: #888; min-width: 28px; }
+  .fb { padding: 5px 14px; font-size: 12px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #666; cursor: pointer; transition: all .15s; }
+  .fb:hover { border-color: #999; color: #333; }
+  .fb.active { background: #eee; color: #1a1a18; border-color: #999; }
+  .date-input { font-size: 12px; padding: 5px 8px; border: 0.5px solid #ccc; border-radius: 8px; color: #333; background: #fff; height: 30px; }
+  .result-count { margin-left: auto; font-size: 11px; color: #aaa; }
+
+  .top-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .mc { background: #eeecea; border-radius: 8px; padding: 1rem; }
+  .mc-label { font-size: 11px; color: #888; margin-bottom: 5px; }
+  .mc-val { font-size: 24px; font-weight: 500; }
+  .mc-sub { font-size: 11px; color: #888; margin-top: 3px; }
+
+  .top-row2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+
+  .section-label { font-size: 13px; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #333; }
+  .svc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .svc-card { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 12px; padding: 1rem; }
+  .svc-name { font-size: 12px; font-weight: 500; margin-bottom: 8px; }
+  .bar-wrap { height: 5px; background: #eee; border-radius: 3px; margin: 6px 0 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: #639922; }
+  .srow { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .sl { font-size: 11px; color: #888; }
+  .sv { font-size: 11px; font-weight: 500; }
+
+  .divider { height: 0.5px; background: #e0dfd8; margin: 1.25rem 0; }
+
+  .comment-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .show-select { font-size: 12px; padding: 4px 8px; border: 0.5px solid #ccc; border-radius: 6px; background: #fff; color: #555; cursor: pointer; }
+
+  .comment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+  .cc { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 12px; padding: 1rem; }
+  .cc-title { font-size: 12px; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+  .ci { border-bottom: 0.5px solid #eee; padding: 8px 0; }
+  .ci:last-child { border-bottom: none; }
+  .ci-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 6px; font-weight: 500; }
+  .tag-taxi { background: #E6F1FB; color: #185FA5; }
+  .tag-driver { background: #FAEEDA; color: #854F0B; }
+  .tag-rental { background: #EEEDFE; color: #3C3489; }
+  .tag-other { background: #f0efe8; color: #5F5E5A; }
+  .ci-date { font-size: 10px; color: #aaa; }
+  .ci-reason { font-size: 10px; color: #aaa; margin-bottom: 3px; }
+  .ci-text { font-size: 12px; color: #333; line-height: 1.55; }
+  .no-comment { font-size: 11px; color: #bbb; font-style: italic; }
+
+  .reason-card { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; }
+  .ri { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 0.5px solid #f0efe8; }
+  .ri:last-child { border-bottom: none; }
+  .ri-label { font-size: 12px; color: #333; flex: 1; }
+  .ri-bar-wrap { width: 140px; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; }
+  .ri-bar { height: 100%; border-radius: 3px; background: #E24B4A; }
+  .ri-count { font-size: 11px; color: #888; min-width: 36px; text-align: right; }
+
+  .chart-card { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 12px; padding: 1rem; }
+  .legend-row { display: flex; gap: 16px; margin-bottom: 10px; font-size: 11px; color: #888; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .empty { font-size: 12px; color: #aaa; padding: 1rem 0; text-align: center; }
+
+  @media (max-width: 680px) {
+    .top-row, .top-row2 { grid-template-columns: repeat(2, 1fr); }
+    .svc-grid { grid-template-columns: 1fr; }
+    .comment-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>CSAT 評論儀表板 <span id="file-info">— 尚未載入資料</span></h1>
+
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('csv-input').click()">
+    <div class="upload-icon">&#128196;</div>
+    <div class="upload-label">將 Zendesk CSV 拖曳至此，或 <strong>點擊上傳</strong></div>
+    <div class="upload-hint">欄位需包含：工單滿意度評論、工單滿意度評級、工單小組、工單建立於 - 日期</div>
+    <div class="file-loaded" id="file-loaded" style="display:none"></div>
+    <input type="file" id="csv-input" accept=".csv">
+  </div>
+
+  <div id="dashboard" style="display:none">
+
+    <!-- 篩選：服務 -->
+    <div class="filter-bar">
+      <span class="filter-label">服務</span>
+      <button class="fb active" onclick="setSvc(this,'all')">全部</button>
+      <button class="fb" onclick="setSvc(this,'taxi-p')">計程車乘客</button>
+      <button class="fb" onclick="setSvc(this,'taxi-d')">計程車司機</button>
+      <button class="fb" onclick="setSvc(this,'rental')">租車</button>
+    </div>
+
+    <!-- 篩選：日期 -->
+    <div class="filter-bar" style="margin-bottom:1.25rem">
+      <span class="filter-label">日期</span>
+      <input class="date-input" type="date" id="date-from" onchange="clearPreset();applyFilters()">
+      <span style="font-size:12px;color:#888">～</span>
+      <input class="date-input" type="date" id="date-to" onchange="clearPreset();applyFilters()">
+      <button class="fb" id="preset-1m" onclick="setPreset('1m',this)">近1個月</button>
+      <button class="fb" id="preset-3m" onclick="setPreset('3m',this)">近3個月</button>
+      <button class="fb active" id="preset-all" onclick="setPreset('all',this)">全部</button>
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <!-- 總覽：含/不含評論分開 -->
+    <div class="section-label">整體統計（含未填評論）</div>
+    <div class="top-row">
+      <div class="mc"><div class="mc-label">總評價筆數</div><div class="mc-val" id="all-total">-</div><div class="mc-sub">含未填評論</div></div>
+      <div class="mc"><div class="mc-label">好評率</div><div class="mc-val" id="all-good-rate">-</div><div class="mc-sub" id="all-good-sub">-</div></div>
+      <div class="mc"><div class="mc-label">差評數</div><div class="mc-val" id="all-bad">-</div><div class="mc-sub" id="all-bad-rate">-</div></div>
+      <div class="mc"><div class="mc-label">有填評論</div><div class="mc-val" id="has-comment">-</div><div class="mc-sub" id="comment-rate">-</div></div>
+    </div>
+
+    <div class="section-label">有評論統計</div>
+    <div class="top-row2">
+      <div class="mc"><div class="mc-label">評論筆數</div><div class="mc-val" id="c-total">-</div><div class="mc-sub">含文字評論</div></div>
+      <div class="mc"><div class="mc-label">評論好評率</div><div class="mc-val" id="c-good-rate">-</div><div class="mc-sub" id="c-good-sub">-</div></div>
+      <div class="mc"><div class="mc-label">評論差評數</div><div class="mc-val" id="c-bad">-</div><div class="mc-sub" id="c-bad-rate">-</div></div>
+      <div class="mc"><div class="mc-label">差評未說明原因</div><div class="mc-val" id="no-reason">-</div><div class="mc-sub">筆</div></div>
+    </div>
+
+    <!-- 各服務 -->
+    <div class="section-label">各服務好評率（含未填評論）</div>
+    <div class="svc-grid" id="svc-grid"></div>
+
+    <div class="divider"></div>
+
+    <!-- 留言 -->
+    <div class="comment-header">
+      <div class="section-label" style="margin-bottom:0">最新留言</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:#888">顯示筆數</span>
+        <select class="show-select" id="show-count" onchange="applyFilters()">
+          <option value="10">近 10 筆</option>
+          <option value="20">近 20 筆</option>
+          <option value="50">近 50 筆</option>
+          <option value="999">全部</option>
+        </select>
+      </div>
+    </div>
+    <div class="comment-grid" style="margin-top:.75rem">
+      <div class="cc">
+        <div class="cc-title" style="color:#3B6D11">&#128077; 好評 <span id="good-total-label" style="margin-left:auto;font-size:10px;font-weight:400;color:#888"></span></div>
+        <div id="good-comments"></div>
+      </div>
+      <div class="cc">
+        <div class="cc-title" style="color:#A32D2D">&#128078; 差評 <span id="bad-total-label" style="margin-left:auto;font-size:10px;font-weight:400;color:#888"></span></div>
+        <div id="bad-comments"></div>
+      </div>
+    </div>
+
+    <!-- 差評原因 -->
+    <div class="section-label">差評原因分佈</div>
+    <div class="reason-card" id="reason-list"></div>
+
+    <!-- 趨勢圖 -->
+    <div class="section-label" style="margin-top:1.25rem">好評 vs 差評趨勢（月）</div>
+    <div class="chart-card">
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:#639922"></span>好評</span>
+        <span><span class="legend-dot" style="background:#E24B4A"></span>差評</span>
+      </div>
+      <div style="position:relative;width:100%;height:220px">
+        <canvas id="trendChart" role="img" aria-label="月份好差評趨勢"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let allData = [];
+let currentSvc = 'all';
+let trendChart = null;
+
+// ── CSV 解析 ──────────────────────────────────────────
+function splitCSVLine(line) {
+  const cols = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur);
+  return cols.map(c => c.trim().replace(/^"+|"+$/g,''));
+}
+function findCol(header, names) {
+  for (const n of names) {
+    const i = header.findIndex(h => h.toLowerCase().replace(/\s/g,'').includes(n.toLowerCase().replace(/\s/g,'')));
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const header = splitCSVLine(lines[0]);
+  const idx = {
+    comment: findCol(header, ['工單滿意度評論','satisfactioncomment','comment']),
+    reason:  findCol(header, ['工單滿意度原因','satisfactionreason','reason']),
+    rating:  findCol(header, ['工單滿意度評級','satisfactionscore','rating','score']),
+    group:   findCol(header, ['工單小組','ticketgroup','group']),
+    date:    findCol(header, ['工單建立於-日期','工單建立於','createdat','date']),
+  };
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = splitCSVLine(lines[i]);
+    const rating = (cols[idx.rating]||'').trim();
+    if (rating !== 'Good' && rating !== 'Bad') continue; // 略過 Offered（未回覆）
+    const comment = (cols[idx.comment]||'').replace(/^'+/,'').trim();
+    rows.push({
+      comment,
+      hasComment: comment.length >= 2,
+      reason: (cols[idx.reason]||'').trim(),
+      rating,
+      group:  (cols[idx.group]||'').trim(),
+      date:   (cols[idx.date]||'').trim().substring(0,10),
+    });
+  }
+  return rows;
+}
+
+// ── 上傳 ──────────────────────────────────────────────
+function handleFile(file) {
+  if (!file || !file.name.endsWith('.csv')) { alert('請上傳 .csv 格式的檔案'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    allData = parseCSV(e.target.result);
+    if (!allData.length) { alert('找不到有效的評價資料，請確認 CSV 包含「工單滿意度評級」欄位'); return; }
+    document.getElementById('file-loaded').textContent = '✓ 已載入：' + file.name + '（共 ' + allData.length + ' 筆評價）';
+    document.getElementById('file-loaded').style.display = 'block';
+    document.getElementById('file-info').textContent = '— ' + file.name;
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    document.getElementById('dashboard').style.display = 'block';
+    currentSvc = 'all';
+    document.querySelectorAll('.filter-bar:first-of-type .fb').forEach((b,i)=>b.classList.toggle('active',i===0));
+    setPreset('all', document.getElementById('preset-all'));
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+document.getElementById('csv-input').addEventListener('change', e => handleFile(e.target.files[0]));
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+
+// ── 篩選 ──────────────────────────────────────────────
+function svcKey(group) {
+  if (group.includes('乘客')) return 'taxi-p';
+  if (group.includes('司機')) return 'taxi-d';
+  if (group.includes('租車')) return 'rental';
+  return 'other';
+}
+function getTag(group) {
+  if (group.includes('乘客')) return {cls:'tag-taxi',  label:'計程車乘客'};
+  if (group.includes('司機')) return {cls:'tag-driver', label:'計程車司機'};
+  if (group.includes('租車')) return {cls:'tag-rental', label:'租車'};
+  return {cls:'tag-other', label: group.replace('LINE GO-','').replace('LINE TAXI-','') || '其他'};
+}
+function setSvc(btn, key) {
+  document.querySelectorAll('.filter-bar:first-of-type .fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSvc = key;
+  applyFilters();
+}
+function clearPreset() {
+  ['preset-1m','preset-3m','preset-all'].forEach(id => document.getElementById(id).classList.remove('active'));
+}
+function setPreset(preset, btn) {
+  clearPreset();
+  btn.classList.add('active');
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  const from = document.getElementById('date-from');
+  const to   = document.getElementById('date-to');
+  if (preset === '1m') { const d = new Date(today); d.setMonth(d.getMonth()-1); from.value = fmt(d); to.value = fmt(today); }
+  else if (preset === '3m') { const d = new Date(today); d.setMonth(d.getMonth()-3); from.value = fmt(d); to.value = fmt(today); }
+  else { from.value = ''; to.value = ''; }
+  applyFilters();
+}
+function applyFilters() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  let data = allData;
+  if (currentSvc !== 'all') data = data.filter(r => svcKey(r.group) === currentSvc);
+  if (from) data = data.filter(r => r.date >= from);
+  if (to)   data = data.filter(r => r.date <= to);
+  document.getElementById('result-count').textContent = '共 ' + data.length + ' 筆';
+  render(data);
+}
+
+// ── 渲染 ──────────────────────────────────────────────
+function render(data) {
+  const showN = parseInt(document.getElementById('show-count').value);
+
+  // 全部（含未填評論）
+  const allGood = data.filter(r => r.rating === 'Good');
+  const allBad  = data.filter(r => r.rating === 'Bad');
+  const allTotal = data.length;
+  const allGoodRate = allTotal ? Math.round(allGood.length / allTotal * 100) : 0;
+  const withComment = data.filter(r => r.hasComment);
+
+  document.getElementById('all-total').textContent    = allTotal.toLocaleString();
+  document.getElementById('all-good-rate').textContent = allGoodRate + '%';
+  document.getElementById('all-good-sub').textContent  = allGood.length.toLocaleString() + ' 筆好評';
+  document.getElementById('all-bad').textContent       = allBad.length.toLocaleString();
+  document.getElementById('all-bad-rate').textContent  = Math.round(allBad.length / Math.max(allTotal,1) * 100) + '% 差評率';
+  document.getElementById('has-comment').textContent   = withComment.length.toLocaleString();
+  document.getElementById('comment-rate').textContent  = Math.round(withComment.length / Math.max(allTotal,1) * 100) + '% 填寫率';
+
+  // 有評論
+  const cGood = withComment.filter(r => r.rating === 'Good');
+  const cBad  = withComment.filter(r => r.rating === 'Bad');
+  const cTotal = withComment.length;
+  const cGoodRate = cTotal ? Math.round(cGood.length / cTotal * 100) : 0;
+  const badNoReason = cBad.filter(r => !r.reason || r.reason === '未提供原因').length;
+
+  document.getElementById('c-total').textContent    = cTotal.toLocaleString();
+  document.getElementById('c-good-rate').textContent = cGoodRate + '%';
+  document.getElementById('c-good-sub').textContent  = cGood.length.toLocaleString() + ' 筆好評';
+  document.getElementById('c-bad').textContent       = cBad.length.toLocaleString();
+  document.getElementById('c-bad-rate').textContent  = Math.round(cBad.length / Math.max(cTotal,1) * 100) + '% 差評率';
+  document.getElementById('no-reason').textContent   = badNoReason;
+
+  // 各服務卡（用全部資料）
+  const svcDefs = [
+    {key:'taxi-p', label:'計程車乘客', cls:'tag-taxi'},
+    {key:'taxi-d', label:'計程車司機', cls:'tag-driver'},
+    {key:'rental',  label:'租車',      cls:'tag-rental'},
+  ];
+  document.getElementById('svc-grid').innerHTML = svcDefs.map(({key,label,cls}) => {
+    const rows = data.filter(r => svcKey(r.group) === key);
+    const g = rows.filter(r => r.rating === 'Good').length;
+    const b = rows.filter(r => r.rating === 'Bad').length;
+    const t = g + b;
+    const pct = t ? Math.round(g / t * 100) : 0;
+    const gc = rows.filter(r => r.rating === 'Good' && r.hasComment).length;
+    const bc = rows.filter(r => r.rating === 'Bad'  && r.hasComment).length;
+    return `<div class="svc-card">
+      <div class="svc-name"><span class="tag ${cls}">${label}</span></div>
+      <div class="srow"><span class="sl">好評（含無評論）</span><span class="sv" style="color:#3B6D11">${g} 則（${pct}%）</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="srow"><span class="sl">差評（含無評論）</span><span class="sv" style="color:#A32D2D">${b} 則（${100-pct}%）</span></div>
+      <div class="srow" style="margin-top:6px;padding-top:6px;border-top:0.5px solid #eee">
+        <span class="sl">有寫評論</span><span class="sv">${gc+bc} 則（好 ${gc} / 差 ${bc}）</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 留言（只顯示有評論的）
+  document.getElementById('good-total-label').textContent = cGood.length + ' 則有評論';
+  document.getElementById('bad-total-label').textContent  = cBad.length + ' 則有評論';
+
+  function renderComments(arr, id) {
+    const el = document.getElementById(id);
+    if (!arr.length) { el.innerHTML = '<div class="empty">此條件無資料</div>'; return; }
+    const show = [...arr].sort((a,b) => b.date.localeCompare(a.date)).slice(0, showN);
+    el.innerHTML = show.map(r => {
+      const tag = getTag(r.group);
+      const d = r.date.replace(/^\d{4}-/,'');
+      const reasonHtml = r.reason && r.reason !== '未提供原因'
+        ? `<div class="ci-reason">${r.reason}</div>` : '';
+      return `<div class="ci">
+        <div class="ci-meta"><span class="tag ${tag.cls}">${tag.label}</span><span class="ci-date">${d}</span></div>
+        ${reasonHtml}
+        <div class="ci-text">${r.comment.replace(/</g,'&lt;')}</div>
+      </div>`;
+    }).join('');
+  }
+  renderComments(cGood, 'good-comments');
+  renderComments(cBad,  'bad-comments');
+
+  // 差評原因
+  const reasonMap = {};
+  cBad.filter(r => r.reason && r.reason !== '未提供原因').forEach(r => {
+    const k = r.reason.split('：')[0];
+    reasonMap[k] = (reasonMap[k] || 0) + 1;
+  });
+  const rs = Object.entries(reasonMap).sort((a,b) => b[1]-a[1]);
+  const maxR = rs[0]?.[1] || 1;
+  document.getElementById('reason-list').innerHTML = rs.length
+    ? rs.map(([k,v]) => `<div class="ri">
+        <span class="ri-label">${k}</span>
+        <div class="ri-bar-wrap"><div class="ri-bar" style="width:${Math.round(v/maxR*100)}%"></div></div>
+        <span class="ri-count">${v} 則</span>
+      </div>`).join('')
+    : '<div class="empty">無差評原因資料</div>';
+
+  // 趨勢圖（全部資料，含未填評論）
+  const monthMap = {};
+  data.forEach(r => {
+    const m = r.date.substring(0,7);
+    if (!m) return;
+    if (!monthMap[m]) monthMap[m] = {g:0, b:0};
+    if (r.rating === 'Good') monthMap[m].g++; else monthMap[m].b++;
+  });
+  const months = Object.keys(monthMap).sort();
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  if (months.length) {
+    trendChart = new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          {label:'好評', data:months.map(m=>monthMap[m].g), borderColor:'#639922', backgroundColor:'rgba(99,153,34,0.07)', fill:true, tension:0.35, pointRadius:3, borderWidth:2},
+          {label:'差評', data:months.map(m=>monthMap[m].b), borderColor:'#E24B4A', backgroundColor:'rgba(226,75,74,0.05)', fill:true, tension:0.35, pointRadius:3, borderWidth:2, borderDash:[4,3]}
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: { legend: { display:false } },
+        scales: {
+          y: { ticks:{font:{size:11},color:'#888'}, grid:{color:'rgba(0,0,0,0.05)'} },
+          x: { ticks:{font:{size:11},color:'#888',maxRotation:45,autoSkip:true,maxTicksLimit:14}, grid:{display:false} }
+        }
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
