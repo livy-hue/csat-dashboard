@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE GO 小幫手 Bot 優化儀表板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F5F3;color:#1a1a1a;font-size:14px;line-height:1.6}
+.header{background:#fff;border-bottom:1px solid #e5e5e5;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:16px;font-weight:600;color:#1a1a1a}
+.header .updated{font-size:12px;color:#888}
+.filters{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 24px;display:flex;gap:10px;align-items:center}
+.filters select{font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer}
+.filters .count{font-size:12px;color:#888;margin-left:6px}
+.main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.metric{background:#fff;border-radius:10px;padding:16px;border:1px solid #e5e5e5}
+.metric .label{font-size:12px;color:#888;margin-bottom:4px}
+.metric .value{font-size:26px;font-weight:600}
+.metric .sub{font-size:11px;color:#aaa;margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.panel{background:#fff;border-radius:10px;padding:16px;border:1px solid #e5e5e5}
+.panel h2{font-size:13px;font-weight:600;margin-bottom:12px;color:#333}
+.intent-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px}
+.intent-label{width:120px;flex-shrink:0;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-wrap{flex:1;height:14px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.bar{height:100%;border-radius:3px}
+.cnt{width:36px;text-align:right;color:#aaa;flex-shrink:0}
+.rate{width:34px;text-align:right;font-weight:600;flex-shrink:0}
+.rate-h{color:#c0392b}.rate-m{color:#d68910}.rate-l{color:#1e8449}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#555;white-space:nowrap}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.tab-content{display:none}.tab-content.active{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.detail-box{background:#f8f8f8;border-radius:8px;padding:12px}
+.detail-box h3{font-size:12px;font-weight:600;color:#555;margin-bottom:8px}
+.kw-list{display:flex;flex-direction:column;gap:4px}
+.kw-item{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.kw-text{color:#333;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px}
+.kw-cnt{color:#999;flex-shrink:0;font-size:11px}
+.examples{margin-top:12px}
+.examples h3{font-size:12px;font-weight:600;color:#555;margin-bottom:8px}
+.chat-ex{background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:8px}
+.chat-row{display:flex;gap:8px;margin:3px 0;align-items:flex-start}
+.chat-who{font-size:10px;font-weight:600;min-width:36px;padding-top:1px;flex-shrink:0}
+.chat-u{color:#185FA5}.chat-b{color:#c0392b}
+.chat-msg{font-size:11px;color:#444;line-height:1.5}
+.chat-msg.wrong{background:#fde8e8;color:#c0392b;padding:2px 6px;border-radius:4px}
+.stats-row{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.stat-item{background:#f8f8f8;border-radius:6px;padding:8px 12px;font-size:12px;color:#555}
+.stat-item strong{color:#1a1a1a;font-size:16px;font-weight:600;display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:#666}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>LINE GO 小幫手 Bot 優化儀表板</h1>
+  <span class="updated">更新時間：2026/06/17 10:52</span>
+</div>
+<div class="filters">
+  <select id="fMonth"><option value="all">全部月份</option><option value="2026-02">2026-02</option><option value="2026-03">2026-03</option><option value="2026-04">2026-04</option><option value="2026-05">2026-05</option><option value="2026-06">2026-06</option></select>
+  <select id="fService"><option value="all">全部服務</option><option value="計程車/機場接送">計程車/機場接送</option><option value="租車">租車</option><option value="不明/其他">不明/其他</option></select>
+  <span class="count" id="fCount"></span>
+</div>
+<div class="main">
+  <div class="metrics">
+    <div class="metric"><div class="label">工單總數</div><div class="value" id="mTotal" style="color:#1a1a1a">-</div><div class="sub" id="mTotalSub"></div></div>
+    <div class="metric"><div class="label">轉人工率</div><div class="value" id="mTransfer" style="color:#c0392b">-</div><div class="sub" id="mTransferSub"></div></div>
+    <div class="metric"><div class="label">自行解決率</div><div class="value" id="mSolved" style="color:#1e8449">-</div><div class="sub" id="mSolvedSub"></div></div>
+    <div class="metric"><div class="label">負面情緒比例</div><div class="value" id="mNeg" style="color:#d68910">-</div><div class="sub">negative + very_negative</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>問題類型 — 數量 / 轉人工率</h2>
+      <div class="legend">
+        <span><i style="background:#185FA5"></i>服務/訂單</span>
+        <span><i style="background:#534AB7"></i>帳務</span>
+        <span><i style="background:#993C1D"></i>投訴/聯繫</span>
+        <span><i style="background:#888"></i>其他</span>
+      </div>
+      <div id="intentList"></div>
+    </div>
+    <div class="panel">
+      <h2>服務分布</h2>
+      <div style="position:relative;height:150px;margin-bottom:16px"><canvas id="cService" role="img" aria-label="服務分布圓餅圖">服務分布</canvas></div>
+      <h2>每月工單趨勢</h2>
+      <div style="position:relative;height:130px"><canvas id="cMonth" role="img" aria-label="每月趨勢">每月趨勢</canvas></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px">
+    <h2 style="margin-bottom:14px">五大問題類型深度分析</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="tabContents"></div>
+  </div>
+</div>
+
+<script>
+const DATA = {"updated": "2026/06/17 10:52", "total": 13240, "transfer": 6416, "solved": 250, "neg": 5775, "months": ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06"], "month_counts": [1185, 3525, 3425, 3440, 1665], "services": {"租車": 2839, "計程車/機場接送": 4617, "不明/其他": 5784}, "intent_data": [{"key": "service__info__do_you_provide_this_service", "label": "詢問服務範圍", "n": 3986, "transfer": 1968, "rate": 49}, {"key": "order__new__quote_request", "label": "詢問報價", "n": 2092, "transfer": 801, "rate": 38}, {"key": "misc__contact__talk_to_agent_over_phone", "label": "要求電話客服", "n": 796, "transfer": 465, "rate": 58}, {"key": "misc__feedback__complaint", "label": "投訴反映", "n": 708, "transfer": 457, "rate": 65}, {"key": "order__wrong_product__missing_item", "label": "行程/商品問題", "n": 365, "transfer": 112, "rate": 31}, {"key": "order__cancellation__cancel", "label": "取消訂單", "n": 283, "transfer": 139, "rate": 49}, {"key": "billing__wrong__charge", "label": "費用爭議(金額)", "n": 277, "transfer": 157, "rate": 57}, {"key": "misc__unsolicited__spam", "label": "垃圾訊息", "n": 274, "transfer": 142, "rate": 52}, {"key": "billing__refund__request", "label": "退款申請", "n": 238, "transfer": 119, "rate": 50}, {"key": "billing__wrong__why_charged", "label": "費用爭議(原因)", "n": 235, "transfer": 158, "rate": 67}, {"key": "billing__checkout__issue", "label": "結帳問題", "n": 194, "transfer": 94, "rate": 48}, {"key": "billing__payment_info__how_can_i_pay", "label": "付款方式詢問", "n": 184, "transfer": 94, "rate": 51}, {"key": "billing__refund__waiting", "label": "退款等待", "n": 179, "transfer": 85, "rate": 47}, {"key": "billing__payment_info__request_confirmation", "label": "確認付款", "n": 176, "transfer": 79, "rate": 45}, {"key": "order__cancellation__why_cancelled", "label": "詢問取消原因", "n": 174, "transfer": 102, "rate": 59}], "intent_analysis": {"service__info__do_you_provide_this_service": {"label": "詢問服務範圍", "n": 3986, "transfer": 1968, "solved": 86, "transfer_rate": 49, "top_msgs": [["計程車", 3018], ["機場接送", 583], ["Taxi", 146], ["Airport Transfers", 30], ["共享機車", 8], ["出租车", 8], ["租車", 6], ["タクシー", 6], ["代駕", 5], ["客服中心", 4], ["請問候客3分鐘取消是自動的，還是司機手動取消？", 2], ["空港送迎", 2]], "top_bot": [["請在選單中選擇您想諮詢的事項    🔍️遺失物, ❗️無法登入, 🚕叫車與取消, 🚕有哪些車種, 💰️付款與優惠, ✏️系統設定, ✉️有收據嗎, 我對已經產生", 3017], ["請在選單中選擇您想諮詢的事項    有哪些車種、多少錢, 可提供服務的地區, 需要在多久前預約, 如何預約, 收據與發票, 可以改預約時間嗎, 取消是否要收費,", 583], ["Please select what you would like to consult from the menu    🔍️ LOST ITEMS, ❗️ ", 146], ["Please select what you would like to consult from the menu    WHAT KIND OF CAR, ", 30]], "top_followup": [["真人客服", 30], ["都不是", 9], ["我對已經被收的車資或取消費的收費有疑問", 8], ["申訴", 7], ["我搭計程車，如何取得乘車收據", 5], ["多元與小黃車資有什麼不同", 4], ["人工客服", 4], ["轉真人客服", 4]], "examples": [[{"s": "客人", "c": "計程車"}, {"s": "bot", "c": "請在選單中選擇您想諮詢的事項    🔍️遺失物, ❗️無法登入, 🚕叫車與取消, 🚕有哪些車種, 💰️付款與優惠, ✏️系統設定, ✉️有收據嗎, 我對已經產生的收費有疑問, 我想成為駕駛"}, {"s": "客人", "c": "路線"}, {"s": "bot", "c": "請問您已經叫車了嗎？    已經叫了, 還沒"}, {"s": "客人", "c": "已經叫了"}, {"s": "bot", "c": "請到LINE GO官方帳號，點選地圖叫車"}, {"s": "bot", "c": "這時會出現地圖畫面，您的上車地址旁會顯示出一支筆的圖樣🖌️    🖌️點這支筆並按下地址欄旁的「+」就可以新增地址；按下「-」可以將設定好的地址刪除了唷"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}], [{"s": "客人", "c": "機場接送"}, {"s": "bot", "c": "請在選單中選擇您想諮詢的事項    有哪些車種、多少錢, 可提供服務的地區, 需要在多久前預約, 如何預約, 收據與發票, 可以改預約時間嗎, 取消是否要收費, 如何確認訂單有成立, 可以在途中接親友"}, {"s": "客人", "c": "需要在多久前預約"}, {"s": "bot", "c": "【台北 / 桃園預約接送】    平日：可預約 3 至 45 天內的行程  連續假日 / 春節：可預約 6 至 45 天內的行程"}, {"s": "bot", "c": "【台中 / 高雄預約接送】    平日請於 3 至 45 個工作天前預約  連續假日或春節須於 7 個工作天前預約（不含預約日當天）"}, {"s": "bot", "c": "【桃園機場即時接機】    24 小時提供服務。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問💔️請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您"}]]}, "order__new__quote_request": {"label": "詢問報價", "n": 2092, "transfer": 801, "solved": 66, "transfer_rate": 38, "top_msgs": [["租車", 2012], ["機場接送", 7], ["取消費用", 3], ["Enquire billing", 2], ["공항 교통편", 2], ["日租方案", 2], ["租車金額包含里程嗎", 1], ["我剛才預約的方案需要多少錢？", 1], ["請問5人5件29吋行李箱6人座車可以嗎", 1], ["異站還租第一次總共扣多少錢", 1], ["請問 提早還車  費用怎麼算", 1], ["請問如果公司希望搭乘多少就付多少，該選擇月結方案還是AFTEE呢？", 1]], "top_bot": [["請在選單中選擇您想諮詢的事項    註冊租車會員與審核, 操作預約/修改/取消租車訂單, 取車相關, 還車相關, 車輛操作與車型配備, 租金發票, 緊急事故處理", 2010], ["請點選地圖叫車，輸入完整的上下車地址，系統就會顯示預估的金額唷。", 9], ["若您已是LINE GO會員：  1.請點選【立即開通】    2.依照指示上傳證件    3.填寫基本資料    4.收到LINE訊息通知：審核通過！    5", 8], ["請在選單中選擇您想諮詢的事項    有哪些車種、多少錢, 可提供服務的地區, 需要在多久前預約, 如何預約, 收據與發票, 可以改預約時間嗎, 取消是否要收費,", 7]], "top_followup": [["真人客服", 17], ["都不是", 4], ["真人", 3], ["客服", 3], ["客服人員", 2], ["人工客服", 2], ["專人服務", 2], ["租車", 2]], "examples": [[{"s": "客人", "c": "租車"}, {"s": "bot", "c": "請在選單中選擇您想諮詢的事項    註冊租車會員與審核, 操作預約/修改/取消租車訂單, 取車相關, 還車相關, 車輛操作與車型配備, 租金發票, 緊急事故處理與保險"}, {"s": "客人", "c": "罰單"}, {"s": "bot", "c": "💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額多退少補。"}, {"s": "bot", "c": "📍️以下範例提供給您參考！    1.訂單金額高於預收款，全額扣款，差額還車時補款。  ＊例：租車金額3000元，預授款：2500元＋1000元。"}, {"s": "bot", "c": "2.訂單金額小於預收款，系統退差額。  ＊例：租車金額2000元，預授款：2500元-退款500元。    預授款還車後系統自動退款，約14工作天，依各銀行程序。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}], [{"s": "客人", "c": "租車"}, {"s": "bot", "c": "請在選單中選擇您想諮詢的事項    註冊租車會員與審核, 操作預約/修改/取消租車訂單, 取車相關, 還車相關, 車輛操作與車型配備, 租金發票, 緊急事故處理與保險"}, {"s": "客人", "c": "尚未退款"}, {"s": "bot", "c": "🙅️無法通過審核可能有以下原因：    1.身份證字號與證件不同  2.汽車管轄編號與證件不同  3.尚有汽車違規或罰單尚未繳清  4.您的汽車駕照屬於吊銷/吊扣狀態  5.身份證字號顯示重複    "}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問💔️請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您"}]]}, "misc__contact__talk_to_agent_over_phone": {"label": "要求電話客服", "n": 796, "transfer": 465, "solved": 7, "transfer_rate": 58, "top_msgs": [["真人客服", 257], ["客服電話", 60], ["人工客服", 29], ["客服", 22], ["電話", 14], ["客服信箱", 13], ["專人", 9], ["我需要真人客服", 8], ["租車", 8], ["計程車", 7], ["轉真人客服", 6], ["轉真人", 6]], "top_bot": [["💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額", 282], ["請到會員 / 客服 / 設定 ⮕ 設定 ⮕ 帳戶資訊，點選 電話號碼 欄位即可完成設定囉😉️", 122], ["敬請進入LINE GO頁面點選 會員 / 客服 / 設定 ⮕ 設定 ⮕ 帳戶資訊，確認您綁定的信箱，若需要變更信箱，請點選E-mail旁的「 &gt; 」符號，", 49], ["這應該是你要找的", 30]], "top_followup": [["真人客服", 8], ["客服電話", 7], ["申訴", 3], ["電話", 2], ["客服", 2], ["真人", 2], ["客服電話幾號？", 2], ["文字客服", 2]], "examples": [[{"s": "客人", "c": "轉真人客服"}, {"s": "bot", "c": "💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額多退少補。"}, {"s": "bot", "c": "📍️以下範例提供給您參考！    1.訂單金額高於預收款，全額扣款，差額還車時補款。  ＊例：租車金額3000元，預授款：2500元＋1000元。"}, {"s": "bot", "c": "2.訂單金額小於預收款，系統退差額。  ＊例：租車金額2000元，預授款：2500元-退款500元。    預授款還車後系統自動退款，約14工作天，依各銀行程序。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}], [{"s": "客人", "c": "真人客服"}, {"s": "bot", "c": "💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額多退少補。"}, {"s": "bot", "c": "📍️以下範例提供給您參考！    1.訂單金額高於預收款，全額扣款，差額還車時補款。  ＊例：租車金額3000元，預授款：2500元＋1000元。"}, {"s": "bot", "c": "2.訂單金額小於預收款，系統退差額。  ＊例：租車金額2000元，預授款：2500元-退款500元。    預授款還車後系統自動退款，約14工作天，依各銀行程序。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}]]}, "misc__feedback__complaint": {"label": "投訴反映", "n": 708, "transfer": 457, "solved": 4, "transfer_rate": 65, "top_msgs": [["申訴", 173], ["進行申訴", 126], ["我要申訴", 29], ["客訴", 22], ["投訴", 16], ["服務申訴", 7], ["我要客訴", 6], ["投訴司機", 6], ["計程車", 5], ["申訴司機", 4], ["我要申訴司機", 4], ["檢舉司機", 4]], "top_bot": [["💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額", 340], ["請問要詢問什麼服務呢？    同站/異站租還, 門市日租", 36], ["機場專車送機（出國）：前一天晚上 20:00 會發送簡訊。", 32], ["🔔️在您預約時間的前、後15分鐘內，您都可以進行取車。  請您進入租車介面依指示進行取車。", 19]], "top_followup": [["真人客服", 5], ["電話客服", 2], ["人工客服", 2], ["我要客訴", 2], ["都不是", 2], ["是計程車司機不載！為啥要收錢", 1], ["計程車司機繞路 可以申訴嗎？", 1], ["想要投訴你們計程車司機接單之後會文字詢問目的地，發現目的地太近，就直接取消訂單，理論上計程車不能隨意", 1]], "examples": [[{"s": "客人", "c": "申訴"}, {"s": "bot", "c": "💰️為了保障您的用車權益，我們將在您取車時啟用「預收款機制」，在取車前會先從您綁定的信用卡進行預收，這個動作只是確保您的信用卡有足夠餘額，還車結算後將預收款金額多退少補。"}, {"s": "bot", "c": "📍️以下範例提供給您參考！    1.訂單金額高於預收款，全額扣款，差額還車時補款。  ＊例：租車金額3000元，預授款：2500元＋1000元。"}, {"s": "bot", "c": "2.訂單金額小於預收款，系統退差額。  ＊例：租車金額2000元，預授款：2500元-退款500元。    預授款還車後系統自動退款，約14工作天，依各銀行程序。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}], [{"s": "客人", "c": "剛剛叫車沒有顯示已叫到  所以我取消了 因為太久了  但被收取消費  我認為是系統的問題  需要申訴"}, {"s": "bot", "c": "如果您不需要使用了，請您進入我的行程中取消預約，不會額外收費喔！    操作步驟：  請您進入LINE GO 官方頁面 ➔ 下方六宮格選擇『地圖叫車』 ➔ 點選下方選項『我的行程』 ➔ 『準備出發』 "}, {"s": "bot", "c": "您的問題是否已被解決？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}]]}, "order__wrong_product__missing_item": {"label": "行程/商品問題", "n": 365, "transfer": 112, "solved": 1, "transfer_rate": 31, "top_msgs": [["計程車", 171], ["遺失物", 18], ["東西忘在車上", 8], ["Taxi", 7], ["物品遺失", 4], ["尋找遺失物", 3], ["遺失物品在計程車上", 2], ["東西遺漏", 2], ["遺失物品", 2], ["東西放在車上忘記拿", 2], ["東西遺忘在租車上", 2], ["遺落物品", 2]], "top_bot": [["請在選單中選擇您想諮詢的事項    🔍️遺失物, ❗️無法登入, 🚕叫車與取消, 🚕有哪些車種, 💰️付款與優惠, ✏️系統設定, ✉️有收據嗎, 我對已經產生", 171], ["請至LINE GO對話窗 ⮕ 點選【開始使用】 ⮕ 【會員 / 客服 / 設定】 ⮕ 【客服中心、行程查詢】卡片中點選【查詢乘車行程】，在【歷史行程】中找到這趟", 49], ["1.若是於還車一小時內，請您可利用APP內一次性解鎖開關車門。", 48], ["請問您已經叫車了嗎？    已經叫了, 還沒", 25]], "top_followup": [["真人客服", 3], ["我2/18有叫車 想詢問司機有沒有發現車上有遺失物 是兩隻小玩偶 企鵝跟熊", 1], ["黑色保溫瓶，上面有一個馬的圖案還有sL 字體", 1], ["可以請求一次性開車門嗎", 1], ["真人客服電話", 1], ["司機不接電話", 1], ["客服不接電話", 1], ["您好我昨日已經發送遺失物的照片及樣式敘述，司機打了好幾通都不接聯絡不上，客服我也告知聯繫不是司機，缺", 1]], "examples": [[{"s": "客人", "c": "RKONEJ 訂單問題  租借車輛時車輛內的加油卡僅有台塑加油卡"}, {"s": "bot", "c": "LINE GO 同站／異站租還 車輛皆為出廠之標配，配備將依不同年式、略有差異，還請您需以實車為主。    想了解各車款配備資訊，請點我"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "您想詢問的是否是以下問題？    是否有USB孔?, 是否有配備APPLE CARPLAY及ANDROID AUTO？如何連接？, 是否有配備藍芽系統？如何連接？, 是否有倒車顯影？倒車雷達？, 是否"}], [{"s": "客人", "c": "好像有東西遺忘在在車上"}, {"s": "bot", "c": "1.若是於還車一小時內，請您可利用APP內一次性解鎖開關車門。"}, {"s": "bot", "c": "2.若是已超過一小時，請您致電客服中心：0809-088-869 ，相關單位接到來電後將儘速協助為您處理。"}, {"s": "bot", "c": "🔔️還車貼心提醒：  1.確認已帶走所有的私人物品及垃圾。  2.確認車輛大燈關閉及車窗已關閉。  3.確認車輛鑰匙已是放置到正確位置。  4.確認油箱是否剩於1/4的油可供給下一位顧客的使用。"}, {"s": "bot", "c": "這是否有幫助？    是，問題已解決, 否，我仍需要幫助"}, {"s": "客人", "c": "否，我仍需要幫助"}, {"s": "bot", "c": "很抱歉小幫手沒有解答到您的疑問  💔️  請您可以透過文字訊息與客服團隊聯繫，我們會在收到您的來信後儘速查明向您回覆，謝謝您！    客服中心請點我"}]]}}, "top5_keys": ["service__info__do_you_provide_this_service", "order__new__quote_request", "misc__contact__talk_to_agent_over_phone", "misc__feedback__complaint", "order__wrong_product__missing_item"]};
+const INTENT_COLORS = {
+  "service__info__do_you_provide_this_service":"#185FA5",
+  "order__new__quote_request":"#185FA5","order__new__place":"#185FA5",
+  "order__cancellation__cancel":"#0F6E56","order__wrong_product__missing_item":"#0F6E56",
+  "misc__contact__talk_to_agent_over_phone":"#993C1D","misc__feedback__complaint":"#993C1D",
+  "billing__wrong__charge":"#534AB7","billing__wrong__why_charged":"#534AB7",
+  "billing__refund__request":"#534AB7","billing__checkout__issue":"#534AB7",
+};
+
+let chartService=null, chartMonth=null;
+
+function renderMetrics(t,tr,sol,neg) {
+  document.getElementById("mTotal").textContent = t.toLocaleString();
+  document.getElementById("mTotalSub").textContent = "張工單";
+  document.getElementById("mTransfer").textContent = t>0?Math.round(tr/t*100)+"%":"-%";
+  document.getElementById("mTransferSub").textContent = tr.toLocaleString()+" 張需真人";
+  document.getElementById("mSolved").textContent = t>0?Math.round(sol/t*100)+"%":"-%";
+  document.getElementById("mSolvedSub").textContent = sol.toLocaleString()+" 張自行解決";
+  document.getElementById("mNeg").textContent = t>0?Math.round(neg/t*100)+"%":"-%";
+  document.getElementById("fCount").textContent = "共 "+t.toLocaleString()+" 筆";
+}
+
+function renderIntentList(data) {
+  const max = Math.max(...data.map(d=>d.n),1);
+  document.getElementById("intentList").innerHTML = data.slice(0,12).map(d=>{
+    const rc = d.rate>=65?"rate-h":d.rate>=45?"rate-m":"rate-l";
+    const bc = INTENT_COLORS[d.key]||"#888";
+    return `<div class="intent-row"><span class="intent-label" title="${d.label}">${d.label}</span><div class="bar-wrap"><div class="bar" style="width:${Math.round(d.n/max*100)}%;background:${bc}"></div></div><span class="cnt">${d.n}</span><span class="rate ${rc}">${d.rate}%</span></div>`;
+  }).join("");
+}
+
+function renderCharts(svcData, monthLabels, monthCounts) {
+  if(chartService) chartService.destroy();
+  chartService = new Chart(document.getElementById("cService"),{type:"doughnut",data:{labels:Object.keys(svcData),datasets:[{data:Object.values(svcData),backgroundColor:["#185FA5","#0F6E56","#888"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:11},boxWidth:10}}}}});
+  if(chartMonth) chartMonth.destroy();
+  chartMonth = new Chart(document.getElementById("cMonth"),{type:"line",data:{labels:monthLabels,datasets:[{data:monthCounts,borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,0.08)",tension:0.3,fill:true,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+}
+
+function buildTabs() {
+  const tabsEl = document.getElementById("tabs");
+  const contentsEl = document.getElementById("tabContents");
+  DATA.top5_keys.forEach((k,i) => {
+    const ia = DATA.intent_analysis[k];
+    if(!ia) return;
+    const tab = document.createElement("div");
+    tab.className = "tab" + (i===0?" active":"");
+    tab.textContent = ia.label + " (" + ia.n + "張)";
+    tab.onclick = () => {
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("tc-"+k).classList.add("active");
+    };
+    tabsEl.appendChild(tab);
+    const content = document.createElement("div");
+    content.className = "tab-content" + (i===0?" active":"");
+    content.id = "tc-"+k;
+    const examplesHtml = ia.examples.slice(0,2).map(ex => {
+      const rows = ex.map(m => {
+        const isBot = m.s==="bot";
+        const cls = isBot && (m.c.includes("預收款") || m.c.includes("門市日租") || m.c.includes("取車")) ? "wrong" : "";
+        return `<div class="chat-row"><span class="chat-who ${isBot?"chat-b":"chat-u"}">${m.s==="bot"?"bot":"客人"}</span><span class="chat-msg ${cls}">${m.c}</span></div>`;
+      }).join("");
+      return `<div class="chat-ex">${rows}</div>`;
+    }).join("");
+    content.innerHTML = `
+      <div class="stats-row">
+        <div class="stat-item"><strong>${ia.n.toLocaleString()}</strong>總工單</div>
+        <div class="stat-item"><strong style="color:#c0392b">${ia.transfer_rate}%</strong>轉人工率</div>
+        <div class="stat-item"><strong style="color:#1e8449">${ia.solved}</strong>自行解決</div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-box">
+          <h3>客人開場詞 Top 12</h3>
+          <div class="kw-list">${ia.top_msgs.map(([k,v])=>`<div class="kw-item"><span class="kw-text" title="${k}">${k}</span><span class="kw-cnt">${v}次</span></div>`).join("")}</div>
+        </div>
+        <div class="detail-box">
+          <h3>Bot 第一則回覆（前4種）</h3>
+          <div class="kw-list">${ia.top_bot.map(([k,v])=>`<div class="kw-item"><span class="kw-text" title="${k}">${k}</span><span class="kw-cnt">${v}次</span></div>`).join("")}</div>
+        </div>
+        <div class="detail-box">
+          <h3>轉人工後客人補充說</h3>
+          <div class="kw-list">${ia.top_followup.map(([k,v])=>`<div class="kw-item"><span class="kw-text" title="${k}">${k}</span><span class="kw-cnt">${v}次</span></div>`).join("")}</div>
+        </div>
+      </div>
+      <div class="examples"><h3>典型轉人工對話範例</h3>${examplesHtml}</div>`;
+    contentsEl.appendChild(content);
+  });
+}
+
+function render() {
+  const month = document.getElementById("fMonth").value;
+  const service = document.getElementById("fService").value;
+  let filtered = DATA;
+  renderMetrics(DATA.total, DATA.transfer, DATA.solved, DATA.neg);
+  renderIntentList(DATA.intent_data);
+  renderCharts(DATA.services, DATA.months, DATA.month_counts);
+}
+
+buildTabs();
+render();
+document.getElementById("fMonth").addEventListener("change", render);
+document.getElementById("fService").addEventListener("change", render);
+</script>
+</body>
+</html>
