@@ -148,6 +148,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 /* NO DATA */
 #noData{padding:80px 0;text-align:center}
+
+.tab-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0}
+.tab-btn{font-size:13px;font-weight:500;padding:10px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+
 </style>
 </head>
 <body>
@@ -194,7 +200,15 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
-<div class="main">
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('dash',this)">📊 儀表板</button>
+  <button class="tab-btn" onclick="switchTab('raw',this)">📋 原始工單</button>
+</div>
+
+<div id="dashPanel">
+</div><!-- close dashPanel -->
+<div id="dashPanel2" style="display:block"><div class="main">
   <div id="noData">
     <div class="ei">📊</div>
     <div class="et">尚未載入資料</div>
@@ -437,6 +451,94 @@ function renderArticles(fd){
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+
+// ── RAW DATA ─────────────────────────────────────────────
+let RAW=[], rawFiltered=[], rawPage=1, rawSort={col:'date',dir:-1};
+const PAGE_SIZE=50;
+
+function switchTab(tab, btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Show/hide dashboard content
+  const dashEls = document.querySelectorAll('#dashPanel, #dashPanel2, #noData, #dash');
+  dashEls.forEach(el=>{ if(el) el.style.display = tab==='dash'?'':'none'; });
+  document.getElementById('rawPanel').style.display = tab==='raw'?'block':'none';
+  document.querySelector('.filters').style.display = tab==='dash'?'flex':'none';
+}
+
+function loadCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.trim().split('\n');
+    const hdrs=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+    const idxOf=k=>hdrs.findIndex(h=>h===k);
+    const iID=idxOf('ID'), iSt=idxOf('工單狀態'), iDate=idxOf('請求於'),
+          iCB=idxOf('分類 (B)'), iCC=idxOf('分類 (C)'), iAs=idxOf('受託人'), iNt=idxOf('外包勾稽');
+    RAW=lines.slice(1).map(line=>{
+      const v=[];let c='',q=false;
+      for(const ch of line){if(ch==='"'){q=!q}else if(ch===','&&!q){v.push(c.trim());c=''}else c+=ch}
+      v.push(c.trim());
+      return {id:v[iID]||'',status:v[iSt]||'',date:(v[iDate]||'').substring(0,10),cat_b:v[iCB]||'',cat_c:v[iCC]||'',assignee:v[iAs]||'',note:v[iNt]||''};
+    }).filter(r=>r.id);
+    // Populate catB filter
+    const sel=document.getElementById('rawCatB');
+    const cats=[...new Set(RAW.map(r=>r.cat_b).filter(Boolean))].sort();
+    sel.innerHTML='<option value="">全部分類(B)</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    rawPage=1;renderRaw();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function sortRaw(col){
+  if(rawSort.col===col)rawSort.dir*=-1;else{rawSort.col=col;rawSort.dir=-1;}
+  renderRaw();
+}
+
+function renderRaw(){
+  if(!RAW.length)return;
+  const q=document.getElementById('rawSearch').value.toLowerCase();
+  const st=document.getElementById('rawStatus').value;
+  const cb=document.getElementById('rawCatB').value;
+  rawFiltered=RAW.filter(r=>{
+    if(st&&r.status!==st)return false;
+    if(cb&&r.cat_b!==cb)return false;
+    if(q&&![r.id,r.cat_b,r.cat_c,r.assignee,r.note].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+  // Sort
+  rawFiltered.sort((a,b)=>{
+    const av=a[rawSort.col]||'',bv=b[rawSort.col]||'';
+    return av<bv?-rawSort.dir:av>bv?rawSort.dir:0;
+  });
+  document.getElementById('rawCount').textContent=`共 ${rawFiltered.length.toLocaleString()} 筆`;
+  renderPage();
+}
+
+function renderPage(){
+  const total=rawFiltered.length;
+  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  rawPage=Math.max(1,Math.min(rawPage,totalPages));
+  const start=(rawPage-1)*PAGE_SIZE, end=Math.min(start+PAGE_SIZE,total);
+  const slice=rawFiltered.slice(start,end);
+  const STATUS_COLOR={'已解決':'color:#059669','已開啟':'color:#DC2626','未解決':'color:#D97706','待處理':'color:#6B7280'};
+  document.getElementById('rawBody').innerHTML=slice.map((r,i)=>`
+    <tr style="background:${i%2===0?'#fff':'#F9FAFB'}">
+      <td style="padding:7px 12px;color:#1D4ED8;font-weight:500">${esc(r.id)}</td>
+      <td style="padding:7px 12px;color:#6B7280;white-space:nowrap">${esc(r.date)}</td>
+      <td style="padding:7px 12px;white-space:nowrap"><span style="${STATUS_COLOR[r.status]||''};font-weight:500">${esc(r.status)}</span></td>
+      <td style="padding:7px 12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.cat_b)}">${esc(r.cat_b)}</td>
+      <td style="padding:7px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.cat_c)}">${esc(r.cat_c)}</td>
+      <td style="padding:7px 12px;white-space:nowrap">${esc(r.assignee)}</td>
+      <td style="padding:7px 12px;color:#6B7280;font-size:11px">${esc(r.note)}</td>
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#9CA3AF">找不到符合條件的工單</td></tr>';
+  document.getElementById('pageInfo').textContent=`第 ${rawPage} / ${totalPages} 頁（${start+1}～${end} 筆）`;
+}
+
+function changePage(dir){
+  rawPage+=dir;renderPage();
+}
+
 // ── Load bundled data.json ────────────────────────────────
 fetch('data.json').then(r=>r.json()).then(d=>{
   DB=d;
@@ -444,5 +546,70 @@ fetch('data.json').then(r=>r.json()).then(d=>{
   initCats();render();
 }).catch(()=>{document.getElementById('hdMeta').textContent='請點「更新資料」上傳 ZIP'});
 </script>
+
+  <!-- RAW DATA PANEL -->
+  <div id="rawPanel" style="display:none">
+    <div class="main">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px">上傳工單 CSV</div>
+          <div style="font-size:11px;color:var(--muted)">從 Zendesk View 匯出的 CSV，包含 ID、狀態、分類、受託人等欄位</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--blue);color:#fff;border-radius:var(--r-sm);font-size:12px;font-weight:500;cursor:pointer;margin-left:auto">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          上傳 CSV
+          <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="loadCSV(this)">
+        </label>
+      </div>
+
+      <!-- Search & Filter bar -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="rawSearch" type="text" placeholder="搜尋 ID、分類、受託人⋯" oninput="renderRaw()"
+          style="font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);flex:1;min-width:200px;color:var(--text)">
+        <select id="rawStatus" onchange="renderRaw()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text)">
+          <option value="">全部狀態</option>
+          <option value="已開啟">已開啟</option>
+          <option value="已解決">已解決</option>
+          <option value="未解決">未解決</option>
+          <option value="待處理">待處理</option>
+        </select>
+        <select id="rawCatB" onchange="renderRaw()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);max-width:180px">
+          <option value="">全部分類(B)</option>
+        </select>
+        <span id="rawCount" style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:auto"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="overflow:hidden">
+        <div style="overflow-x:auto">
+          <table id="rawTable" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th onclick="sortRaw('id')" style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">工單 ID ↕</th>
+                <th onclick="sortRaw('date')" style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">日期 ↕</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">狀態</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">分類 (B)</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">分類 (C)</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">受託人</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">外包勾稽</th>
+              </tr>
+            </thead>
+            <tbody id="rawBody">
+              <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--faint)">請先上傳工單 CSV 檔案</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div id="rawPager" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+          <span id="pageInfo"></span>
+          <div style="display:flex;gap:4px">
+            <button onclick="changePage(-1)" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;font-size:12px">‹</button>
+            <button onclick="changePage(1)" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;font-size:12px">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
