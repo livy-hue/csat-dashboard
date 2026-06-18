@@ -3,142 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LINE GO FAQ 維護儀表板</title>
+<title>LINE GO｜FAQ 維護儀表板</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
+:root{
+  --bg:#F7F8FA;--surface:#FFFFFF;--border:#E8EAF0;
+  --text:#0F1117;--muted:#6B7280;--faint:#9CA3AF;
+  --red:#E53E3E;--red-bg:#FFF5F5;--red-light:#FEB2B2;
+  --amber:#D97706;--amber-bg:#FFFBEB;--amber-light:#FDE68A;
+  --green:#059669;--green-bg:#F0FDF4;--green-light:#A7F3D0;
+  --blue:#1D4ED8;--blue-bg:#EFF6FF;--blue-light:#BFDBFE;
+  --accent:#06C755;
+  --r:10px;--r-sm:6px;
+  font-size:14px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:14px;line-height:1.5}
-.header{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
-.header-left{display:flex;align-items:center;gap:10px}
-.logo{width:28px;height:28px;background:#06c755;border-radius:6px;display:flex;align-items:center;justify-content:center}
-.logo svg{width:16px;height:16px;fill:#fff}
-.header h1{font-size:15px;font-weight:600;color:#111}
-.header .sub{font-size:12px;color:#6b7280}
-.upload-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer}
-.upload-btn:hover{background:#1e40af}
-.filters{background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.filter-group{display:flex;align-items:center;gap:6px}
-.filter-group label{font-size:12px;color:#6b7280;font-weight:500;white-space:nowrap}
-select{font-size:13px;padding:5px 28px 5px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;color:#111;cursor:pointer}
-select:focus{outline:none;border-color:#1d4ed8}
-.divider{width:1px;height:20px;background:#e5e7eb}
-.main{padding:20px 24px;max-width:1400px;margin:0 auto}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.mc{background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e7eb}
-.mc .lbl{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:5px}
-.mc .val{font-size:28px;font-weight:700}
-.mc .chg{font-size:12px;margin-top:4px;color:#6b7280}
-.mc.red .val{color:#dc2626}
-.mc.amber .val{color:#d97706}
-.mc.green .val{color:#059669}
-.mc.blue .val{color:#1d4ed8}
-.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
-.dot.red{background:#dc2626}.dot.amber{background:#d97706}.dot.green{background:#059669}.dot.blue{background:#1d4ed8}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.grid3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px}
-.card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden}
-.card-head{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between}
-.card-head h2{font-size:13px;font-weight:600;color:#111}
-.card-head .badge-cnt{font-size:11px;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:20px}
-.card-body{padding:14px 18px 18px}
-.priority-list{display:flex;flex-direction:column;gap:6px}
-.pitem{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid #f0f0f0;background:#fafafa;cursor:default;transition:background .1s}
-.pitem:hover{background:#f3f4f6}
-.pitem .badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;margin-top:1px}
-.b-p1{background:#fee2e2;color:#991b1b}
-.b-p2{background:#fef3c7;color:#92400e}
-.b-p3{background:#fef9c3;color:#854d0e}
-.b-new{background:#d1fae5;color:#065f46}
-.pitem .info .title{font-size:13px;font-weight:500;color:#111;margin-bottom:2px}
-.pitem .info .why{font-size:11px;color:#6b7280;line-height:1.4}
-.pitem .meta{text-align:right;white-space:nowrap}
-.pitem .views{font-size:13px;font-weight:600;color:#111}
-.pitem .action{font-size:10px;color:#6b7280;margin-top:2px}
-.gap-table{width:100%;border-collapse:collapse}
-.gap-table th{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:left}
-.gap-table td{padding:7px 8px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
-.gap-table tr:last-child td{border-bottom:none}
-.kw-cell{font-weight:500;color:#111}
-.cnt-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px}
-.cnt-none{background:#fee2e2;color:#991b1b}
-.cnt-noclick{background:#fef3c7;color:#92400e}
-.dwell-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6}
-.dwell-row:last-child{border-bottom:none}
-.dwell-title{font-size:12px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dwell-bar-wrap{width:90px;height:5px;background:#f3f4f6;border-radius:3px;flex-shrink:0}
-.dwell-bar{height:100%;border-radius:3px}
-.dwell-sec{font-size:11px;color:#6b7280;min-width:40px;text-align:right}
-.dwell-tag{font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;white-space:nowrap}
-.tag-short{background:#fee2e2;color:#991b1b}
-.tag-ok{background:#d1fae5;color:#065f46}
-.tag-deep{background:#dbeafe;color:#1e40af}
-.chart-wrap{padding:14px 18px 18px;height:200px;position:relative}
-.trend-legend{display:flex;gap:12px;padding:0 18px 8px;font-size:11px;color:#6b7280}
-.trend-legend span{display:flex;align-items:center;gap:4px}
-.legend-dot{width:8px;height:8px;border-radius:2px;display:inline-block}
-.upload-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
-.upload-overlay.show{display:flex}
-.upload-box{background:#fff;border-radius:16px;padding:32px;width:480px;text-align:center}
-.upload-box h3{font-size:16px;font-weight:600;margin-bottom:8px}
-.upload-box p{font-size:13px;color:#6b7280;margin-bottom:20px}
-.drop-zone{border:2px dashed #d1d5db;border-radius:12px;padding:32px;margin-bottom:16px;cursor:pointer;transition:all .15s}
-.drop-zone:hover,.drop-zone.drag{border-color:#1d4ed8;background:#eff6ff}
-.drop-zone .icon{font-size:32px;margin-bottom:8px}
-.drop-zone p{font-size:13px;color:#6b7280;margin:0}
-.drop-zone .hint{font-size:11px;color:#9ca3af;margin-top:4px}
-.file-list{font-size:12px;color:#374151;text-align:left;margin-bottom:16px;max-height:100px;overflow-y:auto}
-.file-item{padding:4px 8px;background:#f9fafb;border-radius:4px;margin-bottom:4px}
-.btn-row{display:flex;gap:8px;justify-content:center}
-.btn-primary{padding:8px 20px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer}
-.btn-primary:hover{background:#1e40af}
-.btn-secondary{padding:8px 20px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer}
-.btn-secondary:hover{background:#f9fafb}
-.progress-bar{height:4px;background:#e5e7eb;border-radius:2px;margin:12px 0;overflow:hidden}
-.progress-inner{height:100%;background:#1d4ed8;border-radius:2px;transition:width .3s}
-.status-msg{font-size:12px;color:#6b7280;margin-top:8px}
-.empty{text-align:center;padding:32px;color:#9ca3af;font-size:13px}
-.section-wrap{margin-bottom:20px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;min-height:100vh}
+
+/* HEADER */
+.hd{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
+.hd-left{display:flex;align-items:center;gap:10px}
+.logo{width:26px;height:26px;background:var(--accent);border-radius:6px;display:grid;place-items:center}
+.logo svg{width:14px;height:14px;fill:#fff}
+.hd h1{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.hd-meta{font-size:11px;color:var(--muted)}
+.upload-btn{display:flex;align-items:center;gap:5px;padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.upload-btn:hover{opacity:.88}
+
+/* FILTERS */
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fl{display:flex;align-items:center;gap:5px}
+.fl label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.fl select{font-size:12px;padding:4px 26px 4px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 7px center;appearance:none;cursor:pointer;color:var(--text)}
+.fl select:focus{outline:none;border-color:var(--blue)}
+.sep{width:1px;height:18px;background:var(--border)}
+
+/* MAIN */
+.main{padding:18px 24px;max-width:1440px;margin:0 auto}
+
+/* KPI CARDS */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.kpi-dot{width:6px;height:6px;border-radius:50%}
+.kpi-val{font-size:26px;font-weight:700;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi.r .kpi-val{color:var(--red)}
+.kpi.a .kpi-val{color:var(--amber)}
+.kpi.g .kpi-val{color:var(--green)}
+.kpi.b .kpi-val{color:var(--blue)}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-hd h2{font-size:12px;font-weight:600;color:var(--text)}
+.cnt-badge{font-size:10px;background:var(--bg);color:var(--muted);border:1px solid var(--border);padding:1px 7px;border-radius:20px}
+.card-body{padding:12px 16px}
+
+/* PRIORITY LIST */
+.plist{display:flex;flex-direction:column;gap:5px}
+.pitem{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:8px;padding:9px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);cursor:default;transition:background .12s}
+.pitem:hover{background:#F0F2F8}
+.pbadge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;margin-top:2px}
+.bp1{background:var(--red-bg);color:var(--red);border:1px solid var(--red-light)}
+.bp2{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-light)}
+.bp3{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.bnew{background:var(--green-bg);color:var(--green);border:1px solid var(--green-light)}
+.pinfo .ptitle{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
+.pinfo .pwhy{font-size:10px;color:var(--muted);line-height:1.4}
+.pmeta{text-align:right;white-space:nowrap}
+.pmeta .pv{font-size:12px;font-weight:600}
+.pmeta .pa{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* GAP TABLE */
+.gtable{width:100%;border-collapse:collapse}
+.gtable th{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:5px 6px;border-bottom:1px solid var(--border);text-align:left}
+.gtable td{padding:6px 6px;font-size:11px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.gtable tr:last-child td{border-bottom:none}
+.cnt{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px}
+.cnt-no{background:var(--red-bg);color:var(--red)}
+.cnt-nc{background:var(--amber-bg);color:var(--amber)}
+
+/* DWELL */
+.drow{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #F3F4F6}
+.drow:last-child{border-bottom:none}
+.dtitle{font-size:11px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbar-w{width:80px;height:4px;background:#F3F4F6;border-radius:2px;flex-shrink:0}
+.dbar{height:100%;border-radius:2px}
+.dsec{font-size:10px;color:var(--muted);min-width:36px;text-align:right}
+.dtag{font-size:9px;font-weight:600;padding:1px 5px;border-radius:10px;white-space:nowrap}
+.dtag-s{background:var(--red-bg);color:var(--red)}
+.dtag-o{background:var(--green-bg);color:var(--green)}
+.dtag-d{background:var(--blue-bg);color:var(--blue)}
+
+/* CHART */
+.chart-wrap{position:relative;height:180px;padding:8px 12px 12px}
+.trend-leg{display:flex;gap:10px;padding:10px 16px 0;font-size:10px;color:var(--muted)}
+.tleg-dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:-1px}
+
+/* ARTICLE TABLE */
+.atable{width:100%;border-collapse:collapse}
+.atable th{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.atable th:nth-child(3),.atable th:nth-child(4),.atable th:nth-child(5){text-align:right}
+.atable td{padding:6px 8px;font-size:11px;border-bottom:1px solid #F3F4F6}
+.atable tr:last-child td{border-bottom:none}
+.atable td:nth-child(3),.atable td:nth-child(4){text-align:right}
+.atable td:nth-child(5){text-align:right}
+.anum{color:var(--faint);font-size:10px}
+
+/* TICKET CHART */
+.tc-wrap{position:relative;height:180px;padding:8px 12px 12px}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:48px 0;color:var(--faint)}
+.empty-state .ei{font-size:40px;margin-bottom:10px}
+.empty-state .et{font-size:14px;font-weight:500;color:var(--muted);margin-bottom:4px}
+.empty-state .es{font-size:12px}
+
+/* UPLOAD OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.overlay.on{display:flex}
+.upbox{background:#fff;border-radius:14px;padding:28px;width:460px;text-align:center}
+.upbox h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.upbox p{font-size:12px;color:var(--muted);margin-bottom:18px}
+.dropz{border:2px dashed var(--border);border-radius:var(--r);padding:28px;cursor:pointer;transition:all .15s;margin-bottom:12px}
+.dropz:hover,.dropz.drag{border-color:var(--blue);background:var(--blue-bg)}
+.dropz .di{font-size:28px;margin-bottom:6px}
+.dropz p{font-size:12px;color:var(--muted);margin:0}
+.dropz .dh{font-size:10px;color:var(--faint);margin-top:3px}
+.flist{font-size:11px;text-align:left;max-height:80px;overflow-y:auto;margin-bottom:10px}
+.fitem{padding:3px 6px;background:var(--bg);border-radius:4px;margin-bottom:3px}
+.pbar{height:3px;background:var(--border);border-radius:2px;margin:8px 0;overflow:hidden}
+.pinn{height:100%;background:var(--blue);border-radius:2px;transition:width .25s}
+.smsg{font-size:11px;color:var(--muted);margin-top:6px}
+.btn-row{display:flex;gap:8px;justify-content:center;margin-top:14px}
+.btn-p{padding:7px 18px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:500;cursor:pointer}
+.btn-p:hover{opacity:.88}
+.btn-p:disabled{opacity:.45;cursor:default}
+.btn-s{padding:7px 18px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;cursor:pointer}
+.btn-s:hover{background:var(--bg)}
+
+/* NO DATA */
+#noData{padding:80px 0;text-align:center}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+<div class="hd">
+  <div class="hd-left">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
     <div>
-      <div class="header h1" style="font-size:15px;font-weight:600">LINE GO FAQ 維護儀表板</div>
-      <div id="headerMeta" class="sub">尚未載入資料</div>
+      <div class="hd h1" style="font-size:14px;font-weight:600">LINE GO FAQ 維護儀表板</div>
+      <div id="hdMeta" class="hd-meta">尚未載入資料</div>
     </div>
   </div>
-  <button class="upload-btn" onclick="showUpload()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    上傳 ZIP
+  <button class="upload-btn" onclick="showUp()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    更新資料
   </button>
 </div>
 
 <div class="filters">
-  <div class="filter-group">
-    <label>時間範圍</label>
-    <select id="filterDays" onchange="render()">
+  <div class="fl"><label>時間範圍</label>
+    <select id="fDays" onchange="render()">
       <option value="30">最近 30 天</option>
       <option value="60">最近 60 天</option>
       <option value="90">最近 90 天</option>
       <option value="180">最近 180 天</option>
-      <option value="9999">全部</option>
+      <option value="9999" selected>全部</option>
     </select>
   </div>
-  <div class="divider"></div>
-  <div class="filter-group">
-    <label>服務類別</label>
-    <select id="filterCat" onchange="render()">
+  <div class="sep"></div>
+  <div class="fl"><label>服務類別</label>
+    <select id="fCat" onchange="render()">
       <option value="">全部類別</option>
     </select>
   </div>
-  <div class="divider"></div>
-  <div class="filter-group">
-    <label>問題類型</label>
-    <select id="filterType" onchange="render()">
+  <div class="sep"></div>
+  <div class="fl"><label>問題類型</label>
+    <select id="fType" onchange="render()">
       <option value="">全部</option>
       <option value="no_result">搜尋無結果</option>
       <option value="no_click">有結果但沒點</option>
@@ -149,373 +195,254 @@ select:focus{outline:none;border-color:#1d4ed8}
 </div>
 
 <div class="main">
-  <div id="noDataMsg" style="text-align:center;padding:60px 0;color:#9ca3af">
-    <div style="font-size:48px;margin-bottom:12px">📊</div>
-    <div style="font-size:15px;font-weight:500;color:#374151;margin-bottom:6px">尚未載入資料</div>
-    <div style="font-size:13px">點擊右上角「上傳 ZIP」，選擇從 Zendesk 匯出的 ZIP 檔案（可一次多選）</div>
+  <div id="noData">
+    <div class="ei">📊</div>
+    <div class="et">尚未載入資料</div>
+    <div class="es">點擊右上角「更新資料」，上傳 Zendesk ZIP 匯出檔案</div>
   </div>
 
-  <div id="dashboard" style="display:none">
-    <div class="metrics" id="metrics"></div>
+  <div id="dash" style="display:none">
+    <!-- KPIs -->
+    <div class="kpis" id="kpis"></div>
 
-    <div class="grid3">
+    <!-- Priority + Gap -->
+    <div class="g2">
       <div class="card">
-        <div class="card-head">
+        <div class="card-hd">
           <h2>🔴 應優先調整的常見問答</h2>
-          <span class="badge-cnt" id="priorityCnt">0 筆</span>
+          <span class="cnt-badge" id="pCnt">0 筆</span>
         </div>
-        <div class="card-body">
-          <div class="priority-list" id="priorityList"></div>
-        </div>
+        <div class="card-body"><div class="plist" id="pList"></div></div>
       </div>
       <div class="card">
-        <div class="card-head"><h2>搜尋無結果關鍵字</h2></div>
-        <div class="card-body" style="padding-top:10px">
-          <table class="gap-table" id="gapTable">
+        <div class="card-hd"><h2>搜尋缺口關鍵字</h2><span class="cnt-badge" id="gCnt">0 筆</span></div>
+        <div class="card-body" style="padding-top:8px">
+          <table class="gtable">
             <thead><tr><th>搜尋詞</th><th>次數</th><th>狀況</th></tr></thead>
-            <tbody></tbody>
+            <tbody id="gBody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <div class="grid2">
+    <!-- Trend + Dwell -->
+    <div class="g3">
       <div class="card">
-        <div class="card-head"><h2>搜尋趨勢（近 12 個月）</h2></div>
-        <div class="trend-legend">
-          <span><span class="legend-dot" style="background:#1d4ed8"></span>Quick Answer</span>
-          <span><span class="legend-dot" style="background:#d97706"></span>僅有文章</span>
-          <span><span class="legend-dot" style="background:#dc2626"></span>無結果</span>
+        <div class="card-hd"><h2>搜尋趨勢（近 12 個月）</h2></div>
+        <div class="trend-leg">
+          <span><span class="tleg-dot" style="background:#1D4ED8"></span>Quick Answer</span>
+          <span><span class="tleg-dot" style="background:#D97706"></span>僅有文章</span>
+          <span><span class="tleg-dot" style="background:#E53E3E"></span>無結果</span>
         </div>
-        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        <div class="chart-wrap"><canvas id="tChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-head"><h2>文章停留時間警示</h2><span class="badge-cnt">停留 &lt;15 秒</span></div>
-        <div class="card-body" style="padding-top:10px">
-          <div id="dwellList"></div>
-        </div>
+        <div class="card-hd"><h2>文章停留時間警示</h2><span class="cnt-badge">&lt;15 秒 = 需改善</span></div>
+        <div class="card-body" style="padding-top:8px"><div id="dwList"></div></div>
       </div>
     </div>
 
-    <div class="card section-wrap">
-      <div class="card-head">
-        <h2>全部文章瀏覽排行</h2>
-        <span class="badge-cnt" id="articleCnt">0 篇</span>
+    <!-- Ticket volume + Article table -->
+    <div class="g3" style="margin-bottom:12px">
+      <div class="card">
+        <div class="card-hd"><h2>乘客進單量（月）</h2><span class="cnt-badge" id="tkCnt"></span></div>
+        <div class="tc-wrap"><canvas id="tkChart"></canvas></div>
       </div>
-      <div class="card-body" style="padding-top:10px">
-        <table class="gap-table" id="articleTable" style="width:100%">
-          <thead><tr><th>#</th><th>文章標題</th><th>類別</th><th style="text-align:right">瀏覽數</th><th style="text-align:right">停留時間</th><th>狀況</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-hd"><h2>TOP 10 高瀏覽文章</h2></div>
+        <div class="card-body" style="padding-top:8px;overflow-x:auto">
+          <table class="atable">
+            <thead><tr><th>#</th><th>文章標題</th><th>瀏覽</th><th>停留</th><th>狀況</th></tr></thead>
+            <tbody id="aBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="upload-overlay" id="uploadOverlay">
-  <div class="upload-box">
+<!-- Upload Overlay -->
+<div class="overlay" id="upOverlay">
+  <div class="upbox">
     <h3>上傳 Zendesk ZIP 報告</h3>
-    <p>可一次選擇多個 ZIP，系統會自動合併解析<br>支援：Knowledge Base、Search、Quick Answers、Self-service、Knowledge Capture</p>
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
-      <div class="icon">📁</div>
-      <p>點擊選擇或拖曳 ZIP 檔案至此</p>
-      <div class="hint">可同時選擇 4～5 個 ZIP</div>
+    <p>可一次選多個 ZIP，系統自動合併解析<br>支援：Knowledge Base、Search、Quick Answers、Self-service</p>
+    <div class="dropz" id="dropZ" onclick="document.getElementById('fIn').click()">
+      <input type="file" id="fIn" multiple accept=".zip,.csv" style="display:none" onchange="handleF(this.files)">
+      <div class="di">📁</div>
+      <p>點擊選擇或拖曳 ZIP 至此</p>
+      <div class="dh">可一次選 4～5 個 ZIP</div>
     </div>
-    <input type="file" id="fileIn" multiple accept=".zip,.csv" style="display:none" onchange="handleFiles(this.files)">
-    <div class="file-list" id="fileList"></div>
-    <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-inner" id="progressInner" style="width:0%"></div></div>
-    <div class="status-msg" id="statusMsg"></div>
+    <div class="flist" id="fList"></div>
+    <div class="pbar" id="pBar" style="display:none"><div class="pinn" id="pInn" style="width:0"></div></div>
+    <div class="smsg" id="sMSG"></div>
     <div class="btn-row">
-      <button class="btn-secondary" onclick="hideUpload()">取消</button>
-      <button class="btn-primary" id="parseBtn" onclick="parseFiles()" disabled>開始解析</button>
+      <button class="btn-s" onclick="hideUp()">取消</button>
+      <button class="btn-p" id="parseBtn" onclick="parseFs()" disabled>開始解析</button>
     </div>
   </div>
 </div>
 
 <script>
-let DB = null;
-let trendChartInst = null;
-let pendingFiles = [];
+let DB=null, tCI=null, tkCI=null, pending=[];
 
-const CATS_ALL = ['APP 操作 / 障礙回報','TAXI','代駕','企業','充電站','包車','揪好搭','據點 / 客服專線','會員/帳號/付款','會員計劃','機場接送','車隊營運','車隊福利','金流帳務','租車'];
-
-function showUpload(){ document.getElementById('uploadOverlay').classList.add('show'); }
-function hideUpload(){ document.getElementById('uploadOverlay').classList.remove('show'); pendingFiles=[]; document.getElementById('fileList').innerHTML=''; document.getElementById('parseBtn').disabled=true; document.getElementById('statusMsg').textContent=''; }
-
-const dz = document.getElementById('dropZone');
+// ── Upload ────────────────────────────────────────────────
+function showUp(){document.getElementById('upOverlay').classList.add('on')}
+function hideUp(){document.getElementById('upOverlay').classList.remove('on');pending=[];document.getElementById('fList').innerHTML='';document.getElementById('parseBtn').disabled=true;document.getElementById('sMSG').textContent='';document.getElementById('pBar').style.display='none'}
+const dz=document.getElementById('dropZ');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFiles(e.dataTransfer.files)});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleF(e.dataTransfer.files)});
+function handleF(files){pending=Array.from(files);document.getElementById('fList').innerHTML=pending.map(f=>`<div class="fitem">📦 ${f.name}</div>`).join('');document.getElementById('parseBtn').disabled=!pending.length}
 
-function handleFiles(files){
-  pendingFiles = Array.from(files);
-  const fl = document.getElementById('fileList');
-  fl.innerHTML = pendingFiles.map(f=>`<div class="file-item">📦 ${f.name} (${(f.size/1024).toFixed(0)} KB)</div>`).join('');
-  document.getElementById('parseBtn').disabled = pendingFiles.length === 0;
-}
-
-async function parseFiles(){
-  if(!pendingFiles.length) return;
-  const pb = document.getElementById('progressBar');
-  const pi = document.getElementById('progressInner');
-  const sm = document.getElementById('statusMsg');
-  pb.style.display='block'; pi.style.width='0%';
-  sm.textContent='解析中...';
-
-  const merged = { searches:[], articles:[], deflections:[], monthly:[], cats: CATS_ALL };
-  const total = pendingFiles.length;
-
-  for(let i=0; i<total; i++){
-    const f = pendingFiles[i];
-    sm.textContent = `正在解析 ${f.name}...`;
-    pi.style.width = Math.round((i/total)*80)+'%';
-    try {
-      const zip = await JSZip.loadAsync(f);
-      for(const [name, entry] of Object.entries(zip.files)){
-        if(entry.dir) continue;
-        const txt = await entry.async('text');
-        const rows = parseCSV(txt);
-        if(!rows.length) continue;
-        const lname = name.toLowerCase();
-        if(lname.includes('search history') || lname.includes('搜尋記錄')){
-          merged.searches.push(...mapSearchHistory(rows));
-        } else if(lname.includes('article engagement') || lname.includes('文章參與')){
-          merged.articles.push(...mapArticles(rows));
-        } else if(lname.includes('deflection drill') || lname.includes('偏轉深入')){
-          merged.deflections.push(...mapDeflections(rows));
-        } else if(lname.includes('searches by month') || lname.includes('按月搜尋')){
-          merged.monthly = mapMonthly(rows);
-        }
+async function parseFs(){
+  if(!pending.length)return;
+  const pb=document.getElementById('pBar'),pi=document.getElementById('pInn'),sm=document.getElementById('sMSG');
+  pb.style.display='block';pi.style.width='0';sm.textContent='解析中...';
+  const M={searches:[],articles:[],deflections:[],monthly:[],tickets:[]};
+  for(let i=0;i<pending.length;i++){
+    const f=pending[i];sm.textContent=`正在解析 ${f.name}...`;pi.style.width=Math.round(i/pending.length*80)+'%';
+    try{
+      const z=await JSZip.loadAsync(f);
+      for(const[n,e]of Object.entries(z.files)){
+        if(e.dir)continue;const t=await e.async('text');const rows=parseCSV(t);if(!rows.length)continue;
+        const ln=n.toLowerCase();
+        if(ln.includes('search history'))M.searches.push(...mapSH(rows));
+        else if(ln.includes('article engagement'))M.articles.push(...mapAE(rows));
+        else if(ln.includes('deflection drill'))M.deflections.push(...mapDD(rows));
+        else if(ln.includes('searches by month'))M.monthly=mapMO(rows);
       }
-    } catch(e){ console.warn('Parse error', f.name, e); }
+    }catch(e){console.warn(f.name,e)}
   }
-
-  pi.style.width='100%';
-  sm.textContent = `✅ 完成！共解析 ${merged.searches.length} 筆搜尋、${merged.articles.length} 篇文章`;
-  DB = merged;
-  initCatFilter();
-  render();
-  setTimeout(hideUpload, 1200);
+  pi.style.width='100%';sm.textContent=`✅ 完成！搜尋 ${M.searches.length} 筆、文章 ${M.articles.length} 篇`;
+  DB=M;initCats();render();setTimeout(hideUp,1200);
 }
-
 function parseCSV(txt){
-  const lines = txt.trim().split('\n');
-  if(lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
-  return lines.slice(1).map(line=>{
-    const vals = [];
-    let cur='', inQ=false;
-    for(const c of line){
-      if(c==='"'){ inQ=!inQ; }
-      else if(c===','&&!inQ){ vals.push(cur.trim()); cur=''; }
-      else cur+=c;
-    }
-    vals.push(cur.trim());
-    const obj={};
-    headers.forEach((h,i)=>obj[h]=vals[i]||'');
-    return obj;
-  });
+  const lines=txt.trim().split('\n');if(lines.length<2)return[];
+  const hdrs=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line=>{const v=[];let c='',q=false;for(const ch of line){if(ch==='"'){q=!q}else if(ch===','&&!q){v.push(c.trim());c=''}else c+=ch}v.push(c.trim());const o={};hdrs.forEach((h,i)=>o[h]=v[i]||'');return o});
+}
+const CAT_KW={'TAXI':['計程車','叫車','小黃','多元','取消費','遲到'],'機場接送':['機場','接送','航班'],'租車':['租車','取車','還車','預授權'],'代駕':['代駕'],'企業':['企業','簽單'],'包車':['包車'],'會員/帳號/付款':['會員','帳號','付款','信用卡','發票','統編','收據','密碼'],'充電站':['充電'],'共享機車':['機車','共享']};
+function gc(t){const s=String(t).toLowerCase();for(const[c,ks]of Object.entries(CAT_KW)){if(ks.some(k=>s.includes(k.toLowerCase())))return c}return '其他'}
+function mapSH(rows){return rows.map(r=>({date:(r['搜尋 - 日期']||'').substring(0,10)||'2026-01-01',q:r['搜尋查詢']||r['Search Query']||'',rt:r['搜尋結果類型']||r['Search Result Type']||'',count:parseFloat(r['搜尋數']||r['Searches']||'1')||1})).filter(r=>r.q)}
+function mapAE(rows){return rows.map(r=>({t:r['文章標題']||'',cat:gc(r['文章標題']||''),v:parseFloat(r['文章檢視']||'0')||0,up:parseFloat(r['文章正面投票數']||'0')||0,dn:parseFloat(r['文章負面投票數']||'0')||0})).filter(r=>r.t)}
+function mapDD(rows){return rows.map(r=>({t:r['頁面標題']||'',dwell:parseFloat(r['平均頁面停留時間（秒）']||'0')||0,as:parseFloat(r['假定偏轉']||'0')||0,ta:parseFloat(r['檢視後工單提交數']||'0')||0,cat:gc(r['頁面標題']||'')})).filter(r=>r.t)}
+function mapMO(rows){const mm={'1 月':'01','2 月':'02','3 月':'03','4 月':'04','5 月':'05','6 月':'06','7 月':'07','8 月':'08','9 月':'09','10 月':'10','11 月':'11','12 月':'12'};return rows.map(r=>({ym:`${r['搜尋 - 年']||'2026'}-${mm[r['搜尋 - 月']?.trim()]||'01'}`,qa:parseFloat(r['快捷回答搜尋數']||'0')||0,ar:parseFloat(r['僅有文章結果的搜尋結果']||'0')||0,no:parseFloat(r['沒有結果的搜尋']||'0')||0}))}
+
+// ── Filters ───────────────────────────────────────────────
+function initCats(){
+  const sel=document.getElementById('fCat');
+  const cats=DB.cats||[...new Set((DB.articles||[]).map(a=>a.cat))].filter(Boolean).sort();
+  cats.forEach(c=>{if(![...sel.options].some(o=>o.value===c)){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)}});
+}
+function filtered(){
+  if(!DB)return null;
+  const days=parseInt(document.getElementById('fDays').value)||9999;
+  const cat=document.getElementById('fCat').value;
+  const type=document.getElementById('fType').value;
+  const cut=new Date();cut.setDate(cut.getDate()-days);
+  const cutS=cut.toISOString().substring(0,10);
+  const searches=(DB.searches||[]).filter(s=>!s.date||s.date>=cutS);
+  const articles=cat?(DB.articles||[]).filter(a=>a.cat===cat):(DB.articles||[]);
+  const deflections=cat?(DB.deflections||[]).filter(d=>d.cat===cat):(DB.deflections||[]);
+  return{searches,articles,deflections,monthly:DB.monthly||[],tickets:DB.tickets||[],type,cat};
 }
 
-function mapSearchHistory(rows){
-  return rows.map(r=>{
-    const dateRaw = r['搜尋 - 日期']||r['Search - Date']||'';
-    return { date: dateRaw.substring(0,10), query: r['搜尋查詢']||r['Search Query']||'', result_type: r['搜尋結果類型']||r['Search Result Type']||'', count: parseFloat(r['搜尋數']||r['Searches']||'1')||1, article: r['內容標題']||r['Content Title']||'' };
-  }).filter(r=>r.query);
-}
-function mapArticles(rows){
-  return rows.map(r=>({ title: r['文章標題']||'', brand: r['文章品牌']||'', views: parseFloat(r['文章檢視']||'0')||0, upvotes: parseFloat(r['文章正面投票數']||'0')||0, downvotes: parseFloat(r['文章負面投票數']||'0')||0, cat: guessCategory(r['文章標題']||'') })).filter(r=>r.title);
-}
-function mapDeflections(rows){
-  return rows.map(r=>({ title: r['頁面標題']||'', dwell: parseFloat(r['平均頁面停留時間（秒）']||'0')||0, assumed: parseFloat(r['假定偏轉']||'0')||0, confirmed: parseFloat(r['確定偏轉']||'0')||0, ticket_after: parseFloat(r['檢視後工單提交數']||'0')||0, cat: guessCategory(r['頁面標題']||'') })).filter(r=>r.title);
-}
-function mapMonthly(rows){
-  const mmap={'1 月':'01','2 月':'02','3 月':'03','4 月':'04','5 月':'05','6 月':'06','7 月':'07','8 月':'08','9 月':'09','10 月':'10','11 月':'11','12 月':'12'};
-  return rows.map(r=>({ ym:`${r['搜尋 - 年']||'2026'}-${mmap[r['搜尋 - 月']?.trim()]||'01'}`, qa: parseFloat(r['快捷回答搜尋數']||'0')||0, article: parseFloat(r['僅有文章結果的搜尋結果']||'0')||0, none: parseFloat(r['沒有結果的搜尋']||'0')||0 }));
-}
-
-const CAT_KEYWORDS = {
-  'TAXI': ['計程車','taxi','叫車','小黃','多元','取消費','遲到','司機','取消'],
-  '機場接送': ['機場','接送','航班','接機','送機'],
-  '租車': ['租車','取車','還車','門市日租','同站','異站','預授權','加油'],
-  '代駕': ['代駕'],
-  '共享機車': ['機車','共享'],
-  '企業': ['企業','簽單'],
-  '包車': ['包車'],
-  '會員/帳號/付款': ['會員','帳號','付款','信用卡','發票','統編','收據','LINE Pay'],
-  '充電站': ['充電'],
-  '車隊營運': ['車隊','司機端','入隊','退隊'],
-};
-function guessCategory(title){
-  const t = title.toLowerCase();
-  for(const [cat, kws] of Object.entries(CAT_KEYWORDS)){
-    if(kws.some(k=>t.includes(k.toLowerCase()))) return cat;
-  }
-  return '其他';
-}
-
-function initCatFilter(){
-  const sel = document.getElementById('filterCat');
-  const existing = new Set(Array.from(sel.options).map(o=>o.value));
-  CATS_ALL.forEach(c=>{ if(!existing.has(c)){ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); } });
-}
-
-function getFilteredData(){
-  if(!DB) return null;
-  const days = parseInt(document.getElementById('filterDays').value)||9999;
-  const cat = document.getElementById('filterCat').value;
-  const type = document.getElementById('filterType').value;
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days);
-  const cutStr = cutoff.toISOString().substring(0,10);
-
-  const searches = DB.searches.filter(s=>{ const d=(s.date||'').substring(0,10); return (!d||d>=cutStr); });
-  const articles = cat ? DB.articles.filter(a=>a.cat===cat) : DB.articles;
-  const deflections = cat ? DB.deflections.filter(d=>d.cat===cat) : DB.deflections;
-  return { searches, articles, deflections, monthly: DB.monthly, type };
-}
-
+// ── Render ────────────────────────────────────────────────
 function render(){
-  if(!DB){ document.getElementById('noDataMsg').style.display='block'; document.getElementById('dashboard').style.display='none'; return; }
-  document.getElementById('noDataMsg').style.display='none';
-  document.getElementById('dashboard').style.display='block';
-
-  const fd = getFilteredData();
-  renderMetrics(fd);
-  renderPriority(fd);
-  renderGapTable(fd);
-  renderTrend();
-  renderDwell(fd);
-  renderArticleTable(fd);
+  if(!DB){document.getElementById('noData').style.display='block';document.getElementById('dash').style.display='none';return}
+  document.getElementById('noData').style.display='none';document.getElementById('dash').style.display='block';
+  const fd=filtered();
+  renderKPIs(fd);renderPriority(fd);renderGap(fd);renderTrend();renderDwell(fd);renderTickets(fd);renderArticles(fd);
 }
-
-function renderMetrics(fd){
-  const noResult = fd.searches.filter(s=>s.result_type==='No results').reduce((a,s)=>a+s.count,0);
-  const noClick  = fd.searches.filter(s=>s.result_type==='With article-only results').reduce((a,s)=>a+s.count,0);
-  const qa       = fd.searches.filter(s=>s.result_type==='With quick answers').reduce((a,s)=>a+s.count,0);
-  const total    = noResult+noClick+qa;
-  const rate     = total>0 ? Math.round(qa/total*100) : 0;
-  document.getElementById('metrics').innerHTML = `
-    <div class="mc red"><div class="lbl"><span class="dot red"></span> 搜尋無結果</div><div class="val">${Math.round(noResult)}</div><div class="chg">次，代表 FAQ 缺口</div></div>
-    <div class="mc amber"><div class="lbl"><span class="dot amber"></span> 有結果但沒點</div><div class="val">${Math.round(noClick)}</div><div class="chg">次，標題待優化</div></div>
-    <div class="mc green"><div class="lbl"><span class="dot green"></span> Quick Answer 觸發</div><div class="val">${Math.round(qa)}</div><div class="chg">次，自助成功</div></div>
-    <div class="mc blue"><div class="lbl"><span class="dot blue"></span> 自助解決率</div><div class="val">${rate}%</div><div class="chg">目標 70%</div></div>`;
+function renderKPIs(fd){
+  const nr=fd.searches.filter(s=>s.rt==='No results').reduce((a,s)=>a+s.count,0);
+  const nc=fd.searches.filter(s=>s.rt==='With article-only results').reduce((a,s)=>a+s.count,0);
+  const qa=fd.searches.filter(s=>s.rt==='With quick answers').reduce((a,s)=>a+s.count,0);
+  const tot=nr+nc+qa;const rate=tot>0?Math.round(qa/tot*100):0;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi r"><div class="kpi-lbl"><span class="kpi-dot" style="background:var(--red)"></span>搜尋無結果</div><div class="kpi-val">${Math.round(nr)}</div><div class="kpi-sub">次　→ FAQ 缺口</div></div>
+    <div class="kpi a"><div class="kpi-lbl"><span class="kpi-dot" style="background:var(--amber)"></span>有結果但沒點</div><div class="kpi-val">${Math.round(nc)}</div><div class="kpi-sub">次　→ 標題待優化</div></div>
+    <div class="kpi g"><div class="kpi-lbl"><span class="kpi-dot" style="background:var(--green)"></span>Quick Answer 觸發</div><div class="kpi-val">${Math.round(qa)}</div><div class="kpi-sub">次　自助成功</div></div>
+    <div class="kpi b"><div class="kpi-lbl"><span class="kpi-dot" style="background:var(--blue)"></span>自助解決率</div><div class="kpi-val">${rate}%</div><div class="kpi-sub">目標 70%${rate>=70?' ✓':''}</div></div>`;
 }
-
 function renderPriority(fd){
-  const type = fd.type;
-  const noResultMap = {};
-  fd.searches.filter(s=>s.result_type==='No results').forEach(s=>{ noResultMap[s.query]=(noResultMap[s.query]||0)+s.count; });
-  const noClickMap = {};
-  fd.searches.filter(s=>s.result_type==='With article-only results').forEach(s=>{ noClickMap[s.query]=(noClickMap[s.query]||0)+s.count; });
-
-  const dwellMap = {};
-  fd.deflections.forEach(d=>{ if(d.dwell>0) dwellMap[d.title]=d.dwell; });
-
-  let items = [];
-
-  if(!type||type==='no_result'){
-    Object.entries(noResultMap).filter(([q])=>q&&q.length>1&&isNaN(q)&&!q.startsWith('#')&&q.length<30).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([q,cnt])=>{
-      items.push({ priority:'p1', label:'🔴 缺文章', title:`搜尋「${q}」找不到任何結果`, why:`共搜尋 ${Math.round(cnt)} 次，FAQ 完全沒有對應內容`, views:'無文章', action:'新增文章', score: cnt*3 });
-    });
-  }
-
-  if(!type||type==='short_dwell'){
-    fd.deflections.filter(d=>d.dwell>0&&d.dwell<15&&d.assumed>0).sort((a,b)=>b.assumed-a.assumed).slice(0,5).forEach(d=>{
-      const art = fd.articles.find(a=>a.title===d.title);
-      items.push({ priority:'p2', label:'🟠 答案不清', title: d.title, why:`平均停留 ${d.dwell.toFixed(1)} 秒（極短），客人看完沒解決`, views: art?`${Math.round(art.views).toLocaleString()} 瀏覽`:'', action:'精簡答案', score: d.assumed*2 });
-    });
-  }
-
-  if(!type||type==='no_click'){
-    Object.entries(noClickMap).filter(([q])=>q&&q.length>1&&isNaN(q)&&q.length<30).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([q,cnt])=>{
-      items.push({ priority:'p3', label:'🟡 標題問題', title:`搜尋「${q}」有結果但客人不點`, why:`共 ${Math.round(cnt)} 次，文章標題與搜尋詞不符`, views:'', action:'改標題或加關鍵字', score: cnt });
-    });
-  }
-
-  if(type==='new_needed'||!type){
-    [['雨傘/遺失物',9],['胎壓',7],['煙味',4],['定位跑掉',4]].forEach(([kw,cnt])=>{
-      items.push({ priority:'new', label:'🟢 需新增', title:`（缺文章）${kw}相關問題`, why:`搜尋無結果 ${cnt} 次，需建立新 FAQ 條目`, views:'無', action:'新增文章', score: cnt*2.5 });
-    });
-  }
-
+  const type=fd.type;
+  const NR={},NC={};
+  fd.searches.filter(s=>s.rt==='No results'&&s.q&&isNaN(s.q)&&s.q.length>1&&s.q.length<35).forEach(s=>NR[s.q]=(NR[s.q]||0)+s.count);
+  fd.searches.filter(s=>s.rt==='With article-only results'&&s.q&&isNaN(s.q)&&s.q.length>1&&s.q.length<35).forEach(s=>NC[s.q]=(NC[s.q]||0)+s.count);
+  const DM={};fd.deflections.forEach(d=>{if(d.dwell>0)DM[d.t]=d});
+  const AV={};fd.articles.forEach(a=>AV[a.t]=a.v);
+  let items=[];
+  if(!type||type==='no_result')Object.entries(NR).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([q,c])=>items.push({p:'p1',lbl:'🔴 缺文章',title:`搜尋「${q}」無任何結果`,why:`共搜尋 ${Math.round(c)} 次，FAQ 完全沒有對應內容`,views:'無文章',act:'新增文章',score:c*3}));
+  if(!type||type==='short_dwell')fd.deflections.filter(d=>d.dwell>0&&d.dwell<15&&d.as>0).sort((a,b)=>b.as-a.as).slice(0,4).forEach(d=>items.push({p:'p2',lbl:'🟠 答案不清',title:d.t,why:`停留 ${d.dwell.toFixed(1)} 秒（極短），客人看完沒解決`,views:AV[d.t]?`${Math.round(AV[d.t]).toLocaleString()} 瀏覽`:'',act:'精簡答案',score:d.as*2}));
+  if(!type||type==='no_click')Object.entries(NC).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([q,c])=>items.push({p:'p3',lbl:'🟡 標題問題',title:`搜尋「${q}」有結果但沒人點`,why:`共 ${Math.round(c)} 次，標題與搜尋詞不符`,views:'',act:'改標題',score:c}));
+  if(!type||type==='new_needed')[['雨傘/遺失物',9],['胎壓',7],['煙味',4],['定位跑掉',4]].forEach(([k,c])=>items.push({p:'new',lbl:'🟢 需新增',title:`（缺文章）${k}`,why:`搜尋無結果 ${c} 次，需建立新條目`,views:'無',act:'新增文章',score:c*2.5}));
   items.sort((a,b)=>b.score-a.score);
-  if(type) items = items.filter(it=>{ if(type==='no_result') return it.label.includes('缺文章'); if(type==='no_click') return it.label.includes('標題'); if(type==='short_dwell') return it.label.includes('答案'); if(type==='new_needed') return it.label.includes('新增'); return true; });
-
-  document.getElementById('priorityCnt').textContent = items.length+' 筆';
-  document.getElementById('priorityList').innerHTML = items.length ? items.map(it=>`
-    <div class="pitem">
-      <span class="badge b-${it.priority}">${it.label}</span>
-      <div class="info"><div class="title">${esc(it.title)}</div><div class="why">${esc(it.why)}</div></div>
-      <div class="meta"><div class="views">${it.views}</div><div class="action">${it.action}</div></div>
-    </div>`).join('') : '<div class="empty">目前篩選條件下無待處理項目</div>';
+  if(type)items=items.filter(i=>({no_result:'p1',short_dwell:'p2',no_click:'p3',new_needed:'new'}[type]===i.p));
+  document.getElementById('pCnt').textContent=items.length+' 筆';
+  document.getElementById('pList').innerHTML=items.length?items.map(i=>`<div class="pitem"><span class="pbadge b${i.p}">${i.lbl}</span><div class="pinfo"><div class="ptitle">${esc(i.title)}</div><div class="pwhy">${esc(i.why)}</div></div><div class="pmeta"><div class="pv">${i.views}</div><div class="pa">${i.act}</div></div></div>`).join(''):'<div class="empty-state"><div class="es">目前篩選條件下無待處理項目</div></div>';
 }
-
-function renderGapTable(fd){
-  const noResultMap = {};
-  fd.searches.filter(s=>s.result_type==='No results').forEach(s=>{ noResultMap[s.query]=(noResultMap[s.query]||0)+s.count; });
-  const sorted = Object.entries(noResultMap).filter(([q])=>q&&isNaN(q)&&q.length>1&&!q.startsWith('#')&&q.length<40).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  const noClickMap = {};
-  fd.searches.filter(s=>s.result_type==='With article-only results').forEach(s=>{ noClickMap[s.query]=(noClickMap[s.query]||0)+s.count; });
-  const noClickTop = Object.entries(noClickMap).filter(([q])=>q&&isNaN(q)&&q.length>1&&q.length<40).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  let html = sorted.map(([q,c])=>`<tr><td class="kw-cell">${esc(q)}</td><td><span class="cnt-badge cnt-none">×${Math.round(c)}</span></td><td style="color:#6b7280;font-size:11px">無結果</td></tr>`).join('');
-  html += noClickTop.map(([q,c])=>`<tr><td class="kw-cell">${esc(q)}</td><td><span class="cnt-badge cnt-noclick">×${Math.round(c)}</span></td><td style="color:#6b7280;font-size:11px">有結果未點</td></tr>`).join('');
-  document.querySelector('#gapTable tbody').innerHTML = html || '<tr><td colspan="3" class="empty">無資料</td></tr>';
+function renderGap(fd){
+  const NR={},NC={};
+  fd.searches.filter(s=>s.rt==='No results'&&s.q&&isNaN(s.q)&&s.q.length>1&&s.q.length<40).forEach(s=>NR[s.q]=(NR[s.q]||0)+s.count);
+  fd.searches.filter(s=>s.rt==='With article-only results'&&s.q&&isNaN(s.q)&&s.q.length>1&&s.q.length<40).forEach(s=>NC[s.q]=(NC[s.q]||0)+s.count);
+  const nr=Object.entries(NR).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([q,c])=>`<tr><td style="font-weight:500">${esc(q)}</td><td><span class="cnt cnt-no">×${Math.round(c)}</span></td><td style="color:var(--faint);font-size:10px">無結果</td></tr>`).join('');
+  const nc=Object.entries(NC).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([q,c])=>`<tr><td style="font-weight:500">${esc(q)}</td><td><span class="cnt cnt-nc">×${Math.round(c)}</span></td><td style="color:var(--faint);font-size:10px">未點擊</td></tr>`).join('');
+  const total=Object.keys(NR).length+Object.keys(NC).length;
+  document.getElementById('gCnt').textContent=total+' 筆';
+  document.getElementById('gBody').innerHTML=(nr+nc)||'<tr><td colspan="3" style="color:var(--faint);text-align:center;padding:12px">無資料</td></tr>';
 }
-
 function renderTrend(){
-  if(!DB||!DB.monthly.length) return;
-  const data = DB.monthly;
-  const labels = data.map(d=>d.ym.replace('-','年').replace(/(\d+)$/,m=>parseInt(m)+'月'));
-  const ctx = document.getElementById('trendChart').getContext('2d');
-  if(trendChartInst) trendChartInst.destroy();
-  trendChartInst = new Chart(ctx,{
-    type:'bar',
-    data:{ labels, datasets:[
-      {label:'Quick Answer',data:data.map(d=>d.qa),backgroundColor:'#1d4ed8',borderRadius:3,stack:'s'},
-      {label:'僅有文章',data:data.map(d=>d.article),backgroundColor:'#d97706',borderRadius:3,stack:'s'},
-      {label:'無結果',data:data.map(d=>d.none),backgroundColor:'#dc2626',borderRadius:3,stack:'s'}
-    ]},
-    options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}`}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11},color:'#9ca3af'}},y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:11},color:'#9ca3af'}}}}
-  });
+  if(!DB||!DB.monthly?.length)return;
+  const d=DB.monthly;
+  const labels=d.map(x=>x.ym.replace('-','年').replace(/(\d+)$/,m=>parseInt(m)+'月'));
+  const ctx=document.getElementById('tChart').getContext('2d');
+  if(tCI)tCI.destroy();
+  tCI=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'QA',data:d.map(x=>x.qa),backgroundColor:'#1D4ED8',borderRadius:2,stack:'s'},{label:'文章',data:d.map(x=>x.ar),backgroundColor:'#D97706',borderRadius:2,stack:'s'},{label:'無結果',data:d.map(x=>x.no),backgroundColor:'#E53E3E',borderRadius:2,stack:'s'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9},color:'#9CA3AF'}},y:{stacked:true,grid:{color:'#F3F4F6'},ticks:{font:{size:9},color:'#9CA3AF'}}}}});
 }
-
 function renderDwell(fd){
-  const dwellList = fd.deflections.filter(d=>d.dwell>0).sort((a,b)=>a.dwell-b.dwell).slice(0,10);
-  const max = Math.max(...dwellList.map(d=>d.dwell),1);
-  document.getElementById('dwellList').innerHTML = dwellList.map(d=>{
-    const pct = Math.round(d.dwell/max*100);
-    const short = d.dwell < 15;
-    const deep = d.dwell > 300;
-    const color = short ? '#dc2626' : deep ? '#1d4ed8' : '#059669';
-    const tag = short ? '<span class="dwell-tag tag-short">太短</span>' : deep ? '<span class="dwell-tag tag-deep">深讀</span>' : '<span class="dwell-tag tag-ok">正常</span>';
-    const shortTitle = d.title.length>22 ? d.title.substring(0,22)+'…' : d.title;
-    return `<div class="dwell-row"><span class="dwell-title" title="${esc(d.title)}">${esc(shortTitle)}</span><div class="dwell-bar-wrap"><div class="dwell-bar" style="width:${pct}%;background:${color}"></div></div><span class="dwell-sec">${d.dwell<60?d.dwell.toFixed(1)+'s':Math.round(d.dwell/60)+'m'}</span>${tag}</div>`;
-  }).join('') || '<div class="empty">無資料</div>';
+  const list=fd.deflections.filter(d=>d.dwell>0).sort((a,b)=>a.dwell-b.dwell).slice(0,10);
+  const max=Math.max(...list.map(d=>d.dwell),1);
+  document.getElementById('dwList').innerHTML=list.map(d=>{
+    const pct=Math.round(d.dwell/max*100);
+    const col=d.dwell<15?'#E53E3E':d.dwell>300?'#1D4ED8':'#059669';
+    const tag=d.dwell<15?'<span class="dtag dtag-s">太短</span>':d.dwell>300?'<span class="dtag dtag-d">深讀</span>':'<span class="dtag dtag-o">正常</span>';
+    const st=d.t.length>24?d.t.substring(0,24)+'…':d.t;
+    return `<div class="drow"><span class="dtitle" title="${esc(d.t)}">${esc(st)}</span><div class="dbar-w"><div class="dbar" style="width:${pct}%;background:${col}"></div></div><span class="dsec">${d.dwell<60?d.dwell.toFixed(1)+'s':Math.round(d.dwell/60)+'m'}</span>${tag}</div>`;
+  }).join('')||'<div style="color:var(--faint);text-align:center;padding:12px;font-size:11px">無資料</div>';
 }
-
-function renderArticleTable(fd){
-  const articles = [...fd.articles].sort((a,b)=>b.views-a.views).slice(0,30);
-  const dwellMap = {};
-  fd.deflections.forEach(d=>{ dwellMap[d.title]=d.dwell; });
-  document.getElementById('articleCnt').textContent = articles.length+' 篇';
-  document.querySelector('#articleTable tbody').innerHTML = articles.map((a,i)=>{
-    const dwell = dwellMap[a.title]||0;
-    const dwellStr = dwell>0?(dwell<60?dwell.toFixed(1)+'s':Math.round(dwell/60)+'m'):'—';
-    const status = dwell>0&&dwell<15?'<span class="dwell-tag tag-short">停留短</span>':dwell>300?'<span class="dwell-tag tag-deep">深讀</span>':dwell>0?'<span class="dwell-tag tag-ok">正常</span>':'—';
-    const shortT = a.title.length>40?a.title.substring(0,40)+'…':a.title;
-    return `<tr><td style="color:#9ca3af;font-size:11px">${i+1}</td><td title="${esc(a.title)}">${esc(shortT)}</td><td style="font-size:11px;color:#6b7280">${esc(a.cat)}</td><td style="text-align:right;font-weight:500">${Math.round(a.views).toLocaleString()}</td><td style="text-align:right;font-size:12px;color:#6b7280">${dwellStr}</td><td>${status}</td></tr>`;
-  }).join('') || '<tr><td colspan="6" class="empty">無資料</td></tr>';
+function renderTickets(fd){
+  const tk=DB.tickets||[];
+  const cat=fd.cat;
+  const filtered_tk=cat?tk.filter(t=>t.cat_c&&t.cat_c.includes(cat)):tk;
+  const byMonth={};
+  filtered_tk.forEach(t=>{if(t.date)byMonth[t.date]=(byMonth[t.date]||0)+(t.cnt||1)});
+  const sorted=Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0]));
+  const total=sorted.reduce((a,[,v])=>a+v,0);
+  document.getElementById('tkCnt').textContent=`共 ${total.toLocaleString()} 張`;
+  const ctx=document.getElementById('tkChart').getContext('2d');
+  if(tkCI)tkCI.destroy();
+  tkCI=new Chart(ctx,{type:'line',data:{labels:sorted.map(([m])=>m),datasets:[{label:'進單量',data:sorted.map(([,v])=>v),borderColor:'#1D4ED8',backgroundColor:'rgba(29,78,216,.08)',fill:true,tension:.35,pointRadius:3,pointBackgroundColor:'#1D4ED8'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},color:'#9CA3AF'}},y:{grid:{color:'#F3F4F6'},ticks:{font:{size:9},color:'#9CA3AF'}}}}});
 }
+function renderArticles(fd){
+  const dmap={};fd.deflections.forEach(d=>dmap[d.t]=d.dwell);
+  const sorted=[...fd.articles].sort((a,b)=>b.v-a.v).slice(0,10);
+  document.getElementById('aBody').innerHTML=sorted.map((a,i)=>{
+    const dw=dmap[a.t]||0;
+    const dws=dw>0?(dw<60?dw.toFixed(1)+'s':Math.round(dw/60)+'m'):'—';
+    const tag=dw>0&&dw<15?'<span class="dtag dtag-s">太短</span>':dw>300?'<span class="dtag dtag-d">深讀</span>':dw>0?'<span class="dtag dtag-o">正常</span>':'—';
+    const st=a.t.length>26?a.t.substring(0,26)+'…':a.t;
+    return `<tr><td class="anum">${i+1}</td><td title="${esc(a.t)}">${esc(st)}</td><td>${Math.round(a.v).toLocaleString()}</td><td>${dws}</td><td>${tag}</td></tr>`;
+  }).join('')||'<tr><td colspan="5" style="color:var(--faint);text-align:center;padding:12px">無資料</td></tr>';
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-// Load bundled data
+// ── Load bundled data.json ────────────────────────────────
 fetch('data.json').then(r=>r.json()).then(d=>{
-  DB = d;
-  document.getElementById('headerMeta').textContent = '資料載入：2026-06-17 | 近 6 個月';
-  if(d.cats) d.cats.forEach(c=>{ const o=document.createElement('option');o.value=c;o.textContent=c;document.getElementById('filterCat').appendChild(o); });
-  render();
-}).catch(()=>{ document.getElementById('headerMeta').textContent='請上傳 ZIP 載入資料'; });
+  DB=d;
+  document.getElementById('hdMeta').textContent='資料更新：2026-06-18';
+  initCats();render();
+}).catch(()=>{document.getElementById('hdMeta').textContent='請點「更新資料」上傳 ZIP'});
 </script>
 </body>
 </html>
